@@ -1,0 +1,318 @@
+/* Isabella - cuarto de bebe rosado. CSS puro, sin imagenes: ornamentos en SVG inline. */
+
+:root {
+  --fondo: #fff1f5;
+  --tarjeta: #fffbfc;
+  --texto: #4a2a3c;
+  --suave: #84596f;
+  --rosa: #f27ba5;
+  --rosa-suave: #fbcfe0;
+  --fucsia: #d94a85;
+  --lila: #b79ae8;
+  --lavanda: #e9ddfb;
+  --menta: #d9f2e6;
+  --menta-fuerte: #2a8f66;
+  --coral: #d62f3a;
+  --coral-fondo: #ffe3e3;
+  --borde: #f6c6d8;
+  --cab-1: #f9a8c6;
+  --cab-2: #f27ba5;
+  --cab-texto: #4a1d33;
+  --sombra: 0 10px 26px -12px rgba(217, 74, 133, 0.45);
+  --resorte: cubic-bezier(0.34, 1.56, 0.64, 1);
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fondo: #2a1722;
+    --tarjeta: #3a2230;
+    --texto: #fbe6ee;
+    --suave: #d2aabd;
+    --rosa: #f58fb3;
+    --rosa-suave: #5a3045;
+    --fucsia: #f06ba0;
+    --lila: #b79ae8;
+    --lavanda: #43355f;
+    --menta: #1f4a3b;
+    --menta-fuerte: #6fd3a8;
+    --coral: #ff8a8f;
+    --coral-fondo: #4a2226;
+    --borde: #5a3347;
+    --cab-1: #5b2c47;
+    --cab-2: #3f1f31;
+    --cab-texto: #ffe4ef;
+    --sombra: 0 10px 26px -12px rgba(0, 0, 0, 0.6);
+  }
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+html { background: var(--fondo); }
+
+body {
+  margin: 0;
+  font-family: 'Nunito', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-size: 1rem;
+  line-height: 1.45;
+  color: var(--texto);
+  background-color: var(--fondo);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cg fill='%23F27BA5' fill-opacity='.13'%3E%3Cpath d='M20 34s-7-4.2-7-9.2A4 4 0 0 1 20 21a4 4 0 0 1 7 3.800c0 5-7 9.200-7 9.200z'/%3E%3Cpath d='M84 86l1.800 5.200 5.200 1.800-5.200 1.800L84 100l-1.800-5.200L77 93l5.200-1.800z'/%3E%3Ccircle cx='96' cy='26' r='2'/%3E%3Ccircle cx='40' cy='96' r='2'/%3E%3C/g%3E%3C/svg%3E");
+  transition: background-color 0.4s, color 0.4s;
+  -webkit-text-size-adjust: 100%;
+}
+
+h1, h2, h3, p { margin: 0; }
+h2, h3, .ml, .chip, .btn { font-family: 'Fredoka', 'Nunito', system-ui, sans-serif; }
+
+/* ---------- Encabezado ---------- */
+.cab {
+  position: relative;
+  overflow: hidden;
+  text-align: center;
+  padding: calc(env(safe-area-inset-top) + 26px) 16px 58px;
+  background: linear-gradient(180deg, var(--cab-1), var(--cab-2));
+  color: var(--cab-texto);
+}
+.cab-deco { position: absolute; inset: 0; width: 100%; height: 100%; }
+.cab-deco .nube { fill: rgba(255, 255, 255, 0.72); }
+.cab-deco .luna { fill: #fff3c4; }
+.cab-deco .est { fill: #fff8dc; }
+.cab-deco .cor { fill: rgba(255, 255, 255, 0.8); }
+@media (prefers-color-scheme: dark) {
+  .cab-deco .nube { fill: rgba(255, 255, 255, 0.1); }
+  .cab-deco .luna, .cab-deco .est { fill: #ffe9a8; }
+  .cab-deco .cor { fill: rgba(245, 143, 179, 0.5); }
+}
+.cab > :not(.cab-deco):not(.ola) { position: relative; }
+.cab h1 { font-family: 'Pacifico', 'Fredoka', cursive; font-weight: 400; font-size: 3rem; line-height: 1.15; }
+.cab-fecha { font-size: 0.9rem; font-weight: 700; opacity: 0.85; }
+.cab-fecha::first-letter { text-transform: uppercase; }
+.cab-sub { font-weight: 600; opacity: 0.85; }
+.ola { position: absolute; left: 0; right: 0; bottom: -1px; width: 100%; height: 26px; fill: var(--fondo); transition: fill 0.4s; }
+
+.contenido { max-width: 560px; margin: 0 auto; padding: 8px 16px calc(env(safe-area-inset-bottom) + 56px); display: grid; gap: 22px; }
+
+/* ---------- Iconos ---------- */
+.ico { width: 1.5em; height: 1.5em; flex: none; fill: currentColor; }
+.ico.l { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.ico.vacio { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linejoin: round; }
+.trazo { stroke-width: 3; stroke-dasharray: 24; stroke-dashoffset: 0; }
+
+/* ---------- Titulos y tarjetas ---------- */
+.titulo { display: flex; align-items: center; gap: 8px; font-size: 1.3rem; font-weight: 600; margin: 0 4px 10px; }
+.titulo .ico { color: var(--rosa); width: 1.3em; height: 1.3em; }
+.lista { display: grid; gap: 14px; }
+
+.tarjeta {
+  position: relative;
+  padding: 18px 16px 16px;
+  background: var(--tarjeta);
+  border-radius: 26px;
+  box-shadow: var(--sombra);
+  transition: background-color 0.4s;
+}
+/* borde punteado interior, tipo costura */
+.tarjeta::after {
+  content: '';
+  position: absolute;
+  inset: 6px;
+  border: 2px dashed var(--borde);
+  border-radius: 20px;
+  opacity: 0.7;
+  pointer-events: none;
+}
+.tarjeta > * { position: relative; z-index: 1; }
+.tarjeta .mono { position: absolute; z-index: 2; top: -9px; right: 16px; width: 34px; height: 34px; color: var(--rosa); }
+.tarjeta.hecha { background: var(--menta); }
+.tarjeta.hecha::after { border-color: var(--menta-fuerte); opacity: 0.4; }
+.tarjeta.hecha .mono { color: var(--menta-fuerte); }
+
+.med-cab { display: flex; align-items: center; gap: 12px; }
+.med-ico {
+  display: grid; place-items: center; width: 48px; height: 48px; flex: none;
+  border-radius: 50%; background: var(--rosa-suave); color: var(--fucsia);
+}
+.med-cab h3 { font-size: 1.2rem; font-weight: 600; line-height: 1.2; }
+.frasco { font-size: 0.88rem; color: var(--suave); }
+.chip {
+  margin-left: auto; padding: 4px 12px; border-radius: 999px; font-size: 0.85rem; font-weight: 500;
+  background: var(--lavanda); white-space: nowrap;
+}
+.dosis { display: flex; align-items: baseline; gap: 6px; margin: 12px 0 4px; }
+.ml { font-size: 3.4rem; font-weight: 600; line-height: 1; color: var(--fucsia); }
+.u { font-family: 'Fredoka', sans-serif; font-size: 1.4rem; font-weight: 500; }
+.mg { color: var(--suave); font-weight: 600; }
+.hora { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 6px 0 10px; font-weight: 700; }
+.hora .ico { color: var(--rosa); }
+.hora b { font-size: 1.3rem; font-variant-numeric: tabular-nums; }
+.hora small { color: var(--suave); font-weight: 600; }
+
+.hora-sel { display: inline-flex; align-items: center; gap: 4px; font-size: 1.2rem; font-weight: 700; }
+select, .campo {
+  min-height: 48px; padding: 0 12px; font: inherit; font-weight: 700; color: var(--texto);
+  background: var(--tarjeta); border: 2px solid var(--borde); border-radius: 16px;
+}
+select { font-variant-numeric: tabular-nums; }
+select:focus-visible, .campo:focus-visible, .btn:focus-visible, .celda:focus-visible {
+  outline: 3px solid var(--fucsia); outline-offset: 2px;
+}
+
+.progreso { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 14px; color: var(--fucsia); }
+.progreso .ico { width: 24px; height: 24px; }
+.progreso .vacio { color: var(--rosa); opacity: 0.7; }
+.progreso .actual { opacity: 1; stroke-width: 2.6; }
+.estado-tratamiento { margin: 12px 0 4px; color: var(--suave); font-weight: 600; }
+.dada-a { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; font-weight: 700; }
+.dada-a .ico { color: var(--menta-fuerte); }
+
+/* ---------- Botones ---------- */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  width: 100%; min-height: 54px; padding: 0 22px;
+  border: 0; border-radius: 999px; cursor: pointer;
+  font-size: 1.1rem; font-weight: 600; color: #fff;
+  background: linear-gradient(135deg, #ea6a9c, #cf3f7d);
+  box-shadow: 0 8px 18px -8px rgba(207, 63, 125, 0.7);
+  transition: transform 0.25s var(--resorte), box-shadow 0.25s, filter 0.2s;
+}
+.btn:active { transform: scale(0.95); box-shadow: 0 3px 8px -4px rgba(207, 63, 125, 0.7); }
+.btn:disabled { opacity: 0.5; cursor: default; }
+.btn.fantasma { color: var(--texto); background: var(--lavanda); box-shadow: none; }
+.btn.claro { color: var(--fucsia); background: #fff; box-shadow: none; }
+.btn.mini { width: auto; min-height: 48px; padding: 0 16px; font-size: 1rem; }
+.btn.mini.claro { color: var(--fucsia); }
+.btn.texto { width: auto; min-height: 48px; color: var(--suave); background: none; box-shadow: none; text-decoration: underline; font-family: 'Nunito', sans-serif; font-weight: 600; font-size: 0.95rem; }
+
+/* ---------- Alerta fija / avisos ---------- */
+.confirmar {
+  padding: 16px; border-radius: 22px; background: var(--lavanda);
+  border: 2px solid var(--lila);
+}
+.confirmar h2 { display: flex; align-items: center; gap: 8px; font-size: 1.1rem; font-weight: 600; margin-bottom: 8px; }
+.confirmar ol { margin: 0; padding-left: 22px; display: grid; gap: 6px; }
+.confirmar li { padding-left: 2px; }
+
+.avisos { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 22px; background: var(--tarjeta); box-shadow: var(--sombra); }
+.avisos .ico { color: var(--fucsia); }
+.avisos p { flex: 1; font-weight: 600; font-size: 0.95rem; }
+.avisos.grande { flex-direction: column; align-items: stretch; text-align: center; padding: 16px; }
+.avisos.grande .ico { margin: 0 auto; width: 2em; height: 2em; }
+.nota { font-size: 0.9rem; color: var(--suave); font-weight: 600; }
+
+.alarma {
+  position: sticky; top: 8px; z-index: 20; padding: 14px 16px; border-radius: 24px; color: #fff;
+  background: linear-gradient(135deg, #ea6a9c, #b8336f);
+  box-shadow: 0 12px 30px -10px rgba(184, 51, 111, 0.8);
+  display: grid; gap: 10px;
+}
+.alarma.suena { animation: halo 1.6s ease-in-out infinite; }
+.alarma-cab { display: flex; align-items: center; gap: 10px; font-family: 'Fredoka', sans-serif; font-size: 1.2rem; }
+.alarma.suena .campana { animation: balanceo 0.7s ease-in-out infinite; transform-origin: 50% 10%; }
+.alarma ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.alarma li { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-weight: 700; }
+.alarma .nota { color: #fff; opacity: 0.9; }
+
+.mensaje { padding: 12px 16px; border-radius: 18px; background: var(--coral-fondo); color: var(--coral); font-weight: 700; }
+
+/* ---------- Acetaminofen ---------- */
+.regla { color: var(--suave); font-size: 0.92rem; margin: 10px 0 12px; }
+.campo { width: 100%; margin-bottom: 12px; font-weight: 600; }
+.datos { display: grid; gap: 6px; margin: 14px 0 4px; }
+.datos p { display: flex; align-items: center; gap: 8px; }
+.datos .ico { color: var(--rosa); }
+.datos b { font-variant-numeric: tabular-nums; }
+.datos .lista-ya b { color: var(--menta-fuerte); }
+.contador { display: flex; align-items: center; gap: 8px; margin-top: 8px; font-weight: 700; }
+.gotas { display: flex; gap: 4px; }
+.gota-c { color: var(--rosa); display: inline-flex; }
+.gota-c .ico { width: 26px; height: 26px; }
+.gota-c.llena .ico { fill: currentColor; }
+.gota-c.tope { color: var(--coral); }
+.gota-c.cae .ico { animation: caer 0.6s var(--resorte); }
+.tope-alerta {
+  display: flex; gap: 10px; margin-top: 12px; padding: 14px; border-radius: 18px;
+  background: var(--coral-fondo); border: 2px solid var(--coral); color: var(--coral); font-weight: 800;
+  animation: sacudida 0.5s;
+}
+.tope-alerta .ico { margin-top: 2px; }
+
+/* ---------- Plan de 7 dias ---------- */
+.plan { display: grid; grid-template-columns: 58px repeat(3, 1fr); gap: 6px; align-items: stretch; }
+.plan-cab { align-self: end; text-align: center; font-family: 'Fredoka', sans-serif; font-size: 0.8rem; font-weight: 500; color: var(--suave); word-break: break-word; }
+.plan-dia { display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 52px; border-radius: 16px; line-height: 1.1; }
+.plan-dia b { font-family: 'Fredoka', sans-serif; font-size: 1.1rem; }
+.plan-dia small { color: var(--suave); font-weight: 600; font-size: 0.75rem; }
+.plan-dia.hoy { background: var(--rosa-suave); }
+.celda {
+  position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  min-height: 52px; padding: 2px; font: inherit; font-weight: 700; font-size: 0.82rem; font-variant-numeric: tabular-nums;
+  color: var(--texto); background: var(--tarjeta); border: 2px dashed var(--borde); border-radius: 16px; cursor: pointer;
+  transition: transform 0.25s var(--resorte), background-color 0.3s;
+}
+.celda:active { transform: scale(0.92); }
+.celda:disabled { opacity: 0.4; cursor: default; }
+.celda.ok { background: var(--menta); border: 2px solid var(--menta-fuerte); }
+.celda.ok .ico { width: 18px; height: 18px; color: var(--menta-fuerte); }
+.celda.na { border: 0; background: none; color: var(--suave); cursor: default; }
+.celda.recien { animation: pop 0.5s var(--resorte); }
+
+/* ---------- Receta y alarmas ---------- */
+.receta { width: 100%; border-collapse: collapse; }
+.receta thead { display: none; }
+.receta, .receta tbody, .receta tr, .receta td { display: block; }
+.receta tr { padding: 12px 0; border-bottom: 2px dotted var(--borde); }
+.receta tr:last-child { border: 0; }
+.receta td:first-child { font-family: 'Fredoka', sans-serif; font-weight: 600; font-size: 1.1rem; }
+.receta td:not(:first-child)::before { content: attr(data-l) ': '; color: var(--suave); font-weight: 700; }
+@media (min-width: 640px) {
+  .receta { display: table; }
+  .receta thead { display: table-header-group; }
+  .receta tbody { display: table-row-group; }
+  .receta tr { display: table-row; }
+  .receta td, .receta th { display: table-cell; padding: 10px 8px; border-bottom: 2px dotted var(--borde); vertical-align: top; text-align: left; }
+  .receta td:not(:first-child)::before { content: none; }
+}
+.receta th { font-family: 'Fredoka', sans-serif; font-size: 0.85rem; color: var(--suave); font-weight: 500; }
+.nota-receta { margin-top: 10px; color: var(--suave); font-size: 0.9rem; }
+
+.senales { border: 2px solid var(--coral); background: var(--coral-fondo); }
+.senales::after { border-color: var(--coral); opacity: 0.35; }
+.senales h2 { color: var(--coral); }
+.senales .titulo .ico { color: var(--coral); }
+.senales ul { margin: 0; padding-left: 20px; display: grid; gap: 6px; font-weight: 600; }
+
+.pie { text-align: center; color: var(--suave); font-size: 0.9rem; display: grid; justify-items: center; gap: 4px; }
+
+/* ---------- Dialogo ---------- */
+.dlg { width: min(92vw, 380px); padding: 22px 20px 18px; border: 0; border-radius: 26px; color: var(--texto); background: var(--tarjeta); box-shadow: 0 20px 50px -10px rgba(0, 0, 0, 0.5); animation: pop 0.35s var(--resorte); }
+.dlg::backdrop { background: rgba(74, 42, 60, 0.5); backdrop-filter: blur(3px); }
+.dlg h3 { font-size: 1.25rem; font-weight: 600; margin-bottom: 8px; }
+.dlg p { margin-bottom: 14px; }
+.dlg-bot { display: flex; flex-direction: row-reverse; gap: 10px; }
+.dlg-bot .btn { flex: 1; padding: 0 12px; }
+
+/* ---------- Confeti de corazones ---------- */
+.cf { position: absolute; z-index: 5; left: 50%; top: 50%; width: 18px; height: 18px; pointer-events: none; animation: vuela 0.95s ease-out forwards; }
+.cf svg { width: 100%; height: 100%; fill: currentColor; }
+
+/* ---------- Animaciones ---------- */
+.entra { animation: sube 0.55s var(--resorte) both; animation-delay: calc(var(--i, 0) * 70ms); }
+.recien .trazo { animation: dibujar 0.45s 0.1s ease-out both; }
+.tarjeta.recien { animation: pop 0.5s var(--resorte); }
+
+@keyframes sube { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+@keyframes pop { 0% { transform: scale(0.85); } 60% { transform: scale(1.06); } 100% { transform: scale(1); } }
+@keyframes dibujar { from { stroke-dashoffset: 24; } to { stroke-dashoffset: 0; } }
+@keyframes vuela {
+  from { opacity: 1; transform: translate(-50%, -50%) scale(0.3); }
+  to { opacity: 0; transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) rotate(var(--r)) scale(1.1); }
+}
+@keyframes balanceo { 0%, 100% { transform: rotate(-14deg); } 50% { transform: rotate(14deg); } }
+@keyframes halo { 0%, 100% { box-shadow: 0 12px 30px -10px rgba(184, 51, 111, 0.8), 0 0 0 0 rgba(242, 123, 165, 0.7); } 50% { box-shadow: 0 12px 30px -10px rgba(184, 51, 111, 0.8), 0 0 0 12px rgba(242, 123, 165, 0); } }
+@keyframes caer { 0% { transform: translateY(-14px) scale(0.6); opacity: 0; } 70% { transform: translateY(2px) scale(1.15); opacity: 1; } 100% { transform: none; } }
+@keyframes sacudida { 0%, 100% { transform: none; } 20% { transform: translateX(-6px); } 40% { transform: translateX(6px); } 60% { transform: translateX(-4px); } 80% { transform: translateX(4px); } }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
