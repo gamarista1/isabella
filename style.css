@@ -127,6 +127,12 @@ h2, h3, .ml, .chip, .btn { font-family: 'Fredoka', 'Nunito', system-ui, sans-ser
 .hist { list-style: none; margin: 0; padding: 0; }
 .hist li { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 52px; border-bottom: 2px dotted var(--borde); font-variant-numeric: tabular-nums; }
 .hist li:last-child { border: 0; }
+.alta { color: var(--coral); }
+.listo {
+  display: flex; align-items: center; gap: 10px; margin: 0 0 14px; padding: 12px 16px;
+  border-radius: 18px; background: var(--menta); font-weight: 700;
+}
+.listo .ico { color: var(--menta-fuerte); flex: none; }
 .hist .btn { width: 48px; padding: 0; flex: none; }
 .ayuda { margin: 0 4px 10px; }
 .senales-intro { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 10px; font-weight: 800; color: var(--coral); }

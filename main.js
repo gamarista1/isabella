@@ -419,6 +419,18 @@ function corazones(tipo, d) {
   return `<div class="progreso" role="img" aria-label="${hechos} de ${m.dias} días dados">${items}</div>`;
 }
 
+// Orden de "Hoy": primero lo que falta (por hora), luego lo ya dado, al final lo que no toca hoy.
+function ordenHoy(d) {
+  const rango = (t) => (d < 0 || d >= PLAN[t].dias ? 2 : registro(t, d) ? 1 : 0);
+  return [...ORDEN].sort((a, b) => rango(a) - rango(b) || PLAN[a].hora.localeCompare(PLAN[b].hora));
+}
+
+function vistaListoHoy(d) {
+  const activos = ORDEN.filter((t) => d >= 0 && d < PLAN[t].dias);
+  if (!activos.length || !activos.every((t) => registro(t, d))) return '';
+  return `<p class="listo">${ico('check', 'l')}Listo por hoy: ya se dieron todas las dosis del día.</p>`;
+}
+
 function tarjetaMed(tipo, d) {
   const m = PLAN[tipo];
   const activo = d >= 0 && d < m.dias;
@@ -449,6 +461,20 @@ function tarjetaMed(tipo, d) {
   </article>`;
 }
 
+function vistaTemperatura() {
+  const u = ultimo('temperatura');
+  const ult = u
+    ? `Última: <b${u.temperatura >= 38.5 ? ' class="alta"' : ''}>${coma(u.temperatura)} °C</b> a las <b>${hhmm(u.t)}</b> (${haceTexto(u.t)})${u.temperatura >= 38.5 ? ' · fiebre' : ''}`
+    : 'Aún sin temperaturas registradas';
+  return `<article class="tarjeta">${ico('mono', 'mono')}
+    <div class="med-cab"><span class="med-ico">${ico('termometro')}</span>
+      <div><h3>Temperatura</h3><p class="frasco">Lecturas del día</p></div></div>
+    <input id="temp" class="campo" type="text" inputmode="decimal" autocomplete="off" placeholder="Temperatura en °C (ej. 37,8)" aria-label="Temperatura en grados">
+    <button class="btn" data-accion="temperatura">${ico('termometro')}Registrar temperatura</button>
+    <div class="datos"><p>${ico('reloj')}<span>${ult}</span></p></div>
+  </article>`;
+}
+
 function vistaAcetaminofen() {
   const t = ahora();
   const lista = de('acetaminofen');
@@ -465,8 +491,7 @@ function vistaAcetaminofen() {
     <div class="med-cab"><span class="med-ico">${ico('termometro')}</span>
       <div><h3>Acetaminofén</h3><p class="frasco">120 mg/5 mL</p></div></div>
     <p class="regla">5 mL (120 mg) solo si la temperatura es 38,5 °C o más. Cada 4 a 6 horas.</p>
-    <input id="temp" class="campo" type="text" inputmode="decimal" autocomplete="off" placeholder="Temperatura en °C (opcional)" aria-label="Temperatura en grados">
-    <button class="btn" data-accion="aceta">${ico('termometro')}Registrar 5 mL</button>
+    <button class="btn" data-accion="aceta">${ico('gota')}Registrar dosis de 5 mL</button>
     <div class="datos">
       <p>${ico('reloj')}<span>${u ? `Última dosis: <b>${hhmm(u.t)}</b> (${haceTexto(u.t)})${u.temperatura ? ` · ${coma(u.temperatura)} °C` : ''}` : 'Sin dosis registradas'}</span></p>
       ${proxima ? `<p class="${puede ? 'lista-ya' : ''}">${ico('reloj')}<span>Próxima dosis desde <b>${hhmm(proxima)}</b>${puede ? ' (ya puede, solo con fiebre)' : ''}</span></p>` : ''}
@@ -527,7 +552,7 @@ function vistaSenales() {
 }
 
 // Ultimos registros de un tipo, con boton para borrar uno si fue un error.
-function historial(tipo, conTemp) {
+function historial(tipo, conTemp, titulo = 'Registros recientes') {
   const lista = de(tipo).slice(-8).reverse();
   if (!lista.length) return '';
   const hoy = hoyStr();
@@ -536,16 +561,17 @@ function historial(tipo, conTemp) {
     const d = fDia.format(t);
     return d === hoy ? 'Hoy' : d === ayer ? 'Ayer' : `${d.slice(8, 10)}/${d.slice(5, 7)}`;
   };
-  const items = lista.map((r) => `<li><span>${cuando(r.t)} · <b>${hhmm(r.t)}</b>${conTemp && r.temperatura ? ` · ${coma(r.temperatura)} °C` : ''}</span>
+  const items = lista.map((r) => `<li><span>${cuando(r.t)} · <b>${hhmm(r.t)}</b>${conTemp && r.temperatura ? ` · <b${r.temperatura >= 38.5 ? ' class="alta"' : ''}>${coma(r.temperatura)} °C</b>` : ''}</span>
     <button class="btn mini fantasma" data-accion="deshacer" data-id="${r.id}" aria-label="Borrar el registro de las ${hhmm(r.t)}">${ico('deshacer')}</button></li>`).join('');
-  return `<article class="tarjeta"><h3 class="sub-titulo">Registros recientes</h3><ul class="hist">${items}</ul></article>`;
+  return `<article class="tarjeta"><h3 class="sub-titulo">${titulo}</h3><ul class="hist">${items}</ul></article>`;
 }
 
 // Contenido de la pantalla elegida en el menu inferior.
 function vistaPantalla() {
   switch (estado.pantalla) {
     case 'fiebre':
-      return seccion(0, vistaAcetaminofen()) + seccion(1, historial('acetaminofen', true));
+      return seccion(0, vistaTemperatura()) + seccion(1, historial('temperatura', true, 'Temperaturas recientes'))
+        + seccion(2, vistaAcetaminofen()) + seccion(3, historial('acetaminofen', true, 'Dosis recientes'));
     case 'lavados':
       return seccion(0, vistaLavados()) + seccion(1, historial('lavado_nasal', false));
     case 'plan':
@@ -555,7 +581,7 @@ function vistaPantalla() {
     case 'alarma':
       return seccion(0, vistaSenales());
     default:
-      return seccion(0, titulo('Hoy') + `<div class="lista">${ORDEN.map((t) => tarjetaMed(t, diaActual())).join('')}</div>`)
+      return seccion(0, titulo('Hoy') + vistaListoHoy(diaActual()) + `<div class="lista">${ordenHoy(diaActual()).map((t) => tarjetaMed(t, diaActual())).join('')}</div>`)
         + seccion(1, vistaAvisos())
         + `<footer class="pie"><p>Esta app organiza lo que indicó la doctora y no reemplaza sus instrucciones.</p>
           <button class="btn texto" data-accion="clave">Cambiar clave</button></footer>`;
@@ -664,20 +690,31 @@ const acciones = {
     const lista = de('acetaminofen');
     const u = lista.at(-1);
     const n24 = lista.filter((r) => r.t > t - 24 * HORA).length;
-    const campo = document.getElementById('temp').value.trim().replace(',', '.');
-    let temperatura;
-    if (campo) {
-      temperatura = Number(campo);
-      if (!Number.isFinite(temperatura) || temperatura < 30 || temperatura > 43) throw new Error('Escribe una temperatura entre 30 y 43 °C.');
-    }
+    const lectura = ultimo('temperatura');
 
     const motivos = [];
     if (n24 >= TOPE_24H) motivos.push(`Ya hay ${n24} dosis en las últimas 24 h. No des más sin hablar con la doctora.`);
     if (u && t < u.t + HORAS_ENTRE_DOSIS * HORA) motivos.push(`Pasaron solo ${Math.round((t - u.t) / 60e3)} min desde la última dosis. La próxima es desde las ${hhmm(u.t + HORAS_ENTRE_DOSIS * HORA)}.`);
-    if (temperatura !== undefined && temperatura < 38.5) motivos.push('La receta indica acetaminofén solo con 38,5 °C o más.');
+    if (lectura && t - lectura.t < 2 * HORA && lectura.temperatura < 38.5) {
+      motivos.push(`La última temperatura (${coma(lectura.temperatura)} °C a las ${hhmm(lectura.t)}) está por debajo de 38,5 °C. La receta indica acetaminofén solo con 38,5 °C o más.`);
+    }
     if (motivos.length && !(await confirmar('¿Registrar de todos modos?', motivos.join(' ')))) return;
 
-    await registrar({ tipo: 'acetaminofen', temperatura }, 'aceta');
+    await registrar({ tipo: 'acetaminofen' }, 'aceta');
+  },
+
+  async temperatura() {
+    const campo = document.getElementById('temp');
+    const texto = campo.value.trim().replace(',', '.');
+    const temperatura = Number(texto);
+    if (!texto || !Number.isFinite(temperatura) || temperatura < 30 || temperatura > 43) throw new Error('Escribe una temperatura entre 30 y 43 °C.');
+    campo.value = '';
+    try {
+      await registrar({ tipo: 'temperatura', temperatura }, 'temp');
+    } catch (e) {
+      campo.value = texto;
+      throw e;
+    }
   },
 
   async lavado() {

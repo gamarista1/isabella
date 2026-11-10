@@ -3,7 +3,7 @@
 -- Registros de dosis: lo unico que cambia a diario.
 CREATE TABLE IF NOT EXISTS registros (
   id          INT AUTO_INCREMENT PRIMARY KEY,
-  tipo        VARCHAR(20) NOT NULL,       -- cetirizina | azitromicina | pediacort | acetaminofen | lavado_nasal
+  tipo        VARCHAR(20) NOT NULL,       -- cetirizina | azitromicina | pediacort | acetaminofen | lavado_nasal | temperatura
   dado_en     DATETIME NOT NULL,          -- hora real en que se dio (America/Caracas)
   dia         INT NULL,                   -- dia del tratamiento (0 = primer dia), solo cetirizina/azitromicina/pediacort
   temperatura DECIMAL(3,1) NULL,          -- solo acetaminofen

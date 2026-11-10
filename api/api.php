@@ -15,7 +15,7 @@ header('Cache-Control: no-store');
 
 // Dias de tratamiento por medicamento del plan (dia 0 = primer dia).
 const PLAN  = ['cetirizina' => 7, 'azitromicina' => 5, 'pediacort' => 5];
-const TIPOS = ['cetirizina', 'azitromicina', 'pediacort', 'acetaminofen', 'lavado_nasal'];
+const TIPOS = ['cetirizina', 'azitromicina', 'pediacort', 'acetaminofen', 'lavado_nasal', 'temperatura'];
 
 function salir(int $codigo, array $datos): void {
     http_response_code($codigo);
@@ -119,8 +119,9 @@ if ($metodo === 'POST') {
         if ($q->fetch()) {
             salir(200, ['ok' => true, 'repetido' => true]);
         }
-    } elseif ($tipo === 'acetaminofen' && isset($in['temperatura']) && $in['temperatura'] !== '') {
-        $t = filter_var($in['temperatura'], FILTER_VALIDATE_FLOAT);
+    } elseif ($tipo === 'temperatura' || ($tipo === 'acetaminofen' && isset($in['temperatura']) && $in['temperatura'] !== '')) {
+        // La lectura de temperatura la exige; en acetaminofen es opcional (registros antiguos).
+        $t = filter_var($in['temperatura'] ?? null, FILTER_VALIDATE_FLOAT);
         if ($t === false || $t < 30 || $t > 43) {
             salir(400, ['error' => 'Temperatura no valida']);
         }
