@@ -2,7 +2,7 @@
 // Isabella - API de medicacion. Un solo archivo, PDO, sin dependencias.
 //
 //   GET     api.php                    -> registros de los ultimos 10 dias
-//   POST    api.php                    -> crea registro  {tipo, dia?, temperatura?}
+//   POST    api.php                    -> crea registro  {tipo, dia?, temperatura?, valor?}
 //   DELETE  api.php?id=N               -> borra un registro
 //   POST    api.php?r=suscripcion      -> guarda suscripcion push (PushSubscription.toJSON())
 //   DELETE  api.php?r=suscripcion      -> {endpoint}
@@ -15,7 +15,10 @@ header('Cache-Control: no-store');
 
 // Dias de tratamiento por medicamento del plan (dia 0 = primer dia).
 const PLAN  = ['cetirizina' => 7, 'azitromicina' => 5, 'pediacort' => 5];
-const TIPOS = ['cetirizina', 'azitromicina', 'pediacort', 'acetaminofen', 'lavado_nasal', 'temperatura'];
+// Seguimiento: nivel entero que se guarda en la columna dia (animo 1-3, llanto y malestar 0-2).
+const NIVELES = ['animo' => [1, 3], 'llanto' => [0, 2], 'malestar' => [0, 2]];
+// 'sueno': horas dormidas, se guardan en la columna temperatura.
+const TIPOS = ['cetirizina', 'azitromicina', 'pediacort', 'acetaminofen', 'lavado_nasal', 'temperatura', 'sueno', 'animo', 'llanto', 'malestar'];
 
 function salir(int $codigo, array $datos): void {
     http_response_code($codigo);
@@ -126,6 +129,18 @@ if ($metodo === 'POST') {
             salir(400, ['error' => 'Temperatura no valida']);
         }
         $temp = round($t, 1);
+    } elseif (isset(NIVELES[$tipo])) {
+        $v = filter_var($in['valor'] ?? null, FILTER_VALIDATE_INT);
+        if ($v === false || $v < NIVELES[$tipo][0] || $v > NIVELES[$tipo][1]) {
+            salir(400, ['error' => 'Valor no valido']);
+        }
+        $dia = $v;
+    } elseif ($tipo === 'sueno') {
+        $v = filter_var($in['valor'] ?? null, FILTER_VALIDATE_FLOAT);
+        if ($v === false || $v < 0.5 || $v > 24) {
+            salir(400, ['error' => 'Horas no validas']);
+        }
+        $temp = round($v, 1);
     }
 
     $q = $db->prepare('INSERT INTO registros (tipo, dado_en, dia, temperatura) VALUES (?, NOW(), ?, ?)');

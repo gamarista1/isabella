@@ -40,16 +40,6 @@ const recetaFilas = () => [
   ['Lavados nasales', 'Solución salina 0,9 %', '5 mL por fosa nasal', 'Cada 4 horas o con congestión'],
 ];
 
-const SENALES = [
-  'Respiración de 50 o más por minuto (contar un minuto completo con la bebé tranquila).',
-  'Se le hunden las costillas o el cuello al respirar, o hace un quejido.',
-  'Labios o cara azulados.',
-  'Está muy dormida, floja o cuesta despertarla.',
-  'No toma líquidos, vomita todo o pasan 8 horas sin pañal mojado.',
-  'La fiebre sigue después de 48 a 72 horas de tratamiento, o sube a pesar del acetaminofén.',
-  'Dosis doble o equivocada: llamar a la doctora o ir a emergencia con los frascos.',
-];
-
 /* ---------- Iconos SVG ---------- */
 const LINEA = {
   reloj: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
@@ -67,6 +57,8 @@ const LINEA = {
   deshacer: '<path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-4"/>',
   alerta: '<path d="M12 3.5l9.5 16.5h-19z"/><path d="M12 10v4.5M12 17.5v.01"/>',
   editar: '<path d="M4 20l1-4L16.5 4.5a2 2 0 0 1 3 3L8 19z"/>',
+  grafica: '<path d="M4 4v16h16"/><path d="M8 15l3.5-4.5 3 2.5L19 7"/>',
+  luna: '<path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5z"/>',
 };
 const RELLENO = {
   corazon: '<path d="M12 20.5s-7.5-4.6-7.5-10A4.3 4.3 0 0 1 12 7.6a4.3 4.3 0 0 1 7.5 2.9c0 5.4-7.5 10-7.5 10z"/>',
@@ -105,7 +97,7 @@ const estado = {
   cargado: false,
   error: '',
   mensaje: '',
-  pantalla: 'hoy',       // hoy | fiebre | lavados | plan | receta | alarma (menu inferior)
+  pantalla: 'hoy',       // hoy | fiebre | lavados | plan | receta | evolucion (menu inferior)
   primera: true,         // animacion de entrada al abrir la app o cambiar de pantalla
   recien: null,          // clave del ultimo elemento marcado (para animarlo)
   silenciadas: {},       // clave -> hasta que momento (ms)
@@ -346,11 +338,11 @@ const PANTALLAS = [
   ['lavados', 'Lavados', 'lavado'],
   ['plan', 'Plan', 'calendario'],
   ['receta', 'Receta', 'receta'],
-  ['alarma', 'Alarma', 'alerta'],
+  ['evolucion', 'Evolución', 'grafica'],
 ];
 const TITULOS = {
   hoy: 'Isabella', fiebre: 'Fiebre y acetaminofén', lavados: 'Lavados nasales',
-  plan: 'Plan de los días', receta: 'Receta', alarma: 'Señales de alarma',
+  plan: 'Plan de los días', receta: 'Receta', evolucion: 'Evolución de Isabella',
 };
 
 function vistaCabecera() {
@@ -546,21 +538,179 @@ function vistaReceta() {
     <p class="nota-receta">1 cc = 1 mL. Medir con jeringa oral, no con cucharita. Agitar los jarabes antes de medir.</p></article>`;
 }
 
-function vistaSenales() {
-  return `<article class="tarjeta senales"><p class="senales-intro">${ico('alerta')}<span>Llama a la doctora o ve a emergencias de inmediato si ocurre algo de esto:</span></p>
-    <ul>${SENALES.map((s) => `<li>${s}</li>`).join('')}</ul></article>`;
+/* ---------- Evolucion: graficas SVG (sin librerias) y seguimiento ---------- */
+const DIA_MS = 864e5;
+const SEGUIMIENTO = {
+  animo: { titulo: 'Ánimo', icono: 'corazon', ayuda: '¿Cómo ha estado de ánimo?', opciones: [[1, 'Mal'], [2, 'Regular'], [3, 'Bien']] },
+  llanto: { titulo: 'Llanto', icono: 'gota', ayuda: '¿Ha llorado?', opciones: [[0, 'Nada'], [1, 'Poco'], [2, 'Mucho']] },
+  malestar: { titulo: 'Malestar', icono: 'alerta', ayuda: '¿Se le nota molestia o dolor?', opciones: [[0, 'Ninguno'], [1, 'Leve'], [2, 'Fuerte']] },
+};
+const etiquetaNivel = (tipo, v) => SEGUIMIENTO[tipo].opciones.find((o) => o[0] === v)?.[1] ?? String(v);
+const valorDe = (r) => (r.tipo === 'sueno' ? r.temperatura : r.dia);   // sueno: horas; el resto: nivel
+const suma = (v) => v.reduce((a, b) => a + b, 0);
+const media = (v) => suma(v) / v.length;
+
+const ultimos7 = () => Array.from({ length: 7 }, (_, i) => fDia.format(ahora() - (6 - i) * DIA_MS));
+const inicioDia = (d) => Date.parse(`${d}T00:00:00${OFFSET}`);
+
+// Un punto por dia (a mediodia) con el valor agregado de los registros de ese dia.
+function porDia(tipo, agregar) {
+  return ultimos7().map((d) => {
+    const v = de(tipo).filter((r) => fDia.format(r.t) === d).map(valorDe);
+    return v.length ? { x: inicioDia(d) + DIA_MS / 2, y: agregar(v) } : null;
+  }).filter(Boolean);
 }
+
+// Recta de minimos cuadrados. Con menos de 3 puntos no hay tendencia que valga.
+function regresion(pts) {
+  if (pts.length < 3) return null;
+  const mx = media(pts.map((p) => p.x));
+  const my = media(pts.map((p) => p.y));
+  let sxy = 0;
+  let sxx = 0;
+  for (const p of pts) { sxy += (p.x - mx) * (p.y - my); sxx += (p.x - mx) ** 2; }
+  if (!sxx) return null;
+  const m = sxy / sxx;
+  return { m, b: my - m * mx, porDia: m * DIA_MS };
+}
+
+function grafica({ titulo: nombre, icono, series, ymin, ymax, ticks, ref, unidad, umbral, vacio }) {
+  const W = 340; const H = 176; const L = 50; const R = 12; const T = 12; const B = 26;
+  const dias = ultimos7();
+  const x0 = inicioDia(dias[0]);
+  const X = (x) => L + ((x - x0) / (7 * DIA_MS)) * (W - L - R);
+  const Y = (y) => T + (1 - (Math.min(Math.max(y, ymin), ymax) - ymin) / (ymax - ymin)) * (H - T - B);
+
+  const hayDatos = series.some((s) => s.pts.length);
+  let svg = '';
+  if (hayDatos) {
+    svg += ticks.map(([v, t]) => `<line class="gl" x1="${L}" x2="${W - R}" y1="${Y(v)}" y2="${Y(v)}"/><text class="gt" x="${L - 6}" y="${Y(v) + 3.5}" text-anchor="end">${t}</text>`).join('');
+    svg += dias.map((d, i) => `<text class="gt" x="${X(x0 + (i + 0.5) * DIA_MS)}" y="${H - 8}" text-anchor="middle">${i === 6 ? 'Hoy' : `${d.slice(8, 10)}/${d.slice(5, 7)}`}</text>`).join('');
+    if (ref !== undefined) svg += `<line class="gref" x1="${L}" x2="${W - R}" y1="${Y(ref)}" y2="${Y(ref)}"/>`;
+    const bw = ((W - L - R) / 7) * 0.5;
+    for (const s of series) {
+      if (s.barras) {
+        svg += s.pts.map((p) => `<rect x="${X(p.x) - bw / 2}" y="${Y(p.y)}" width="${bw}" height="${Math.max(0, Y(ymin) - Y(p.y))}" rx="4" fill="${s.color}"/>`).join('');
+      } else {
+        if (s.pts.length > 1) svg += `<polyline fill="none" stroke="${s.color}" stroke-width="2.5" stroke-linejoin="round" points="${s.pts.map((p) => `${X(p.x)},${Y(p.y)}`).join(' ')}"/>`;
+        svg += s.pts.map((p) => `<circle cx="${X(p.x)}" cy="${Y(p.y)}" r="3.6" fill="${s.color}"/>`).join('');
+      }
+      const r = s.regresion && regresion(s.pts);
+      if (r) {
+        const a = s.pts[0].x; const z = s.pts.at(-1).x;
+        svg += `<line class="greg" x1="${X(a)}" y1="${Y(r.m * a + r.b)}" x2="${X(z)}" y2="${Y(r.m * z + r.b)}"/>`;
+      }
+    }
+  }
+
+  const leyendas = series.length > 1
+    ? `<p class="leyendas">${series.map((s) => `<span><i style="background:${s.color}"></i>${s.nombre}</span>`).join('')}</p>` : '';
+  const tendencias = hayDatos ? series.filter((s) => s.regresion).map((s) => {
+    const r = regresion(s.pts);
+    if (!r) return `<p class="tendencia nota">Tendencia: se necesitan datos de 3 o más ${s.barras ? 'días' : 'registros'}.</p>`;
+    const p = Math.abs(r.porDia);
+    const txt = p < umbral ? 'estable' : `${r.porDia > 0 ? 'sube' : 'baja'} ${coma(p.toFixed(1))} ${unidad} por día`;
+    return `<p class="tendencia">Tendencia (línea punteada): ${txt}</p>`;
+  }).join('') : '';
+
+  return `<article class="tarjeta grafica"><h3 class="sub-titulo">${ico(icono)}${nombre}</h3>
+    ${hayDatos ? `<svg class="gr" viewBox="0 0 ${W} ${H}" role="img" aria-label="Gráfica de ${nombre}">${svg}</svg>` : `<p class="nota">${vacio}</p>`}
+    ${leyendas}${tendencias}</article>`;
+}
+
+function vistaGraficas() {
+  const x0 = inicioDia(ultimos7()[0]);
+  const temps = de('temperatura').filter((r) => r.t >= x0).map((r) => ({ x: r.t, y: r.temperatura }));
+  const tmin = Math.min(36, Math.floor(Math.min(...temps.map((p) => p.y))));
+  const tmax = Math.max(40, Math.ceil(Math.max(...temps.map((p) => p.y))));
+  const sueno = porDia('sueno', suma);
+  const smax = Math.max(12, Math.ceil(Math.max(0, ...sueno.map((p) => p.y)) / 6) * 6);
+
+  return [
+    grafica({
+      titulo: 'Temperatura', icono: 'termometro', unidad: '°C', umbral: 0.1, ref: 38.5,
+      ymin: tmin, ymax: tmax, ticks: Array.from({ length: tmax - tmin + 1 }, (_, i) => [tmin + i, tmin + i]),
+      series: [{ nombre: 'Temperatura', color: 'var(--fucsia)', pts: temps, regresion: true }],
+      vacio: 'Aún no hay temperaturas. Se registran en la pestaña Fiebre. La línea roja marca 38,5 °C.',
+    }),
+    grafica({
+      titulo: 'Horas de sueño por día', icono: 'luna', unidad: 'h', umbral: 0.25,
+      ymin: 0, ymax: smax, ticks: [0, 1, 2, 3].map((i) => [(smax / 3) * i, `${(smax / 3) * i} h`]),
+      series: [{ nombre: 'Horas de sueño', color: 'var(--lila)', pts: sueno, barras: true, regresion: true }],
+      vacio: 'Aún no hay horas de sueño. Regístralas abajo.',
+    }),
+    grafica({
+      titulo: 'Ánimo', icono: 'corazon', unidad: 'puntos', umbral: 0.1,
+      ymin: 0.6, ymax: 3.4, ticks: SEGUIMIENTO.animo.opciones,
+      series: [{ nombre: 'Ánimo (promedio del día)', color: 'var(--menta-fuerte)', pts: porDia('animo', media), regresion: true }],
+      vacio: 'Aún no hay registros de ánimo. Regístralos abajo.',
+    }),
+    grafica({
+      titulo: 'Llanto y malestar', icono: 'gota', unidad: 'puntos', umbral: 0.1,
+      ymin: -0.4, ymax: 2.4, ticks: [[0, 'Nada'], [1, 'Poco'], [2, 'Mucho']],
+      series: [
+        { nombre: 'Llanto (lo más alto del día)', color: 'var(--fucsia)', pts: porDia('llanto', (v) => Math.max(...v)) },
+        { nombre: 'Malestar (lo más alto del día)', color: 'var(--lila)', pts: porDia('malestar', (v) => Math.max(...v)) },
+      ],
+      vacio: 'Aún no hay registros de llanto ni de malestar. Regístralos abajo.',
+    }),
+  ].join('');
+}
+
+function vistaSueno() {
+  const hoy = hoyStr();
+  const total = suma(de('sueno').filter((r) => fDia.format(r.t) === hoy).map((r) => r.temperatura));
+  const u = ultimo('sueno');
+  return `<article class="tarjeta" data-clave="sueno">${ico('mono', 'mono')}
+    <div class="med-cab"><span class="med-ico">${ico('luna')}</span>
+      <div><h3>Sueño</h3><p class="frasco">Horas dormidas (noche o siestas)</p></div></div>
+    <input id="sueno" class="campo" type="text" inputmode="decimal" autocomplete="off" placeholder="Horas dormidas (ej. 2,5)" aria-label="Horas dormidas">
+    <button class="btn" data-accion="sueno">${ico('luna')}Registrar sueño</button>
+    <div class="datos">
+      <p>${ico('reloj')}<span>${u ? `Último: <b>${coma(u.temperatura)} h</b> a las <b>${hhmm(u.t)}</b>` : 'Aún sin registros'}</span></p>
+      <p>${ico('luna')}<span>Total de hoy: <b>${coma(Number(total.toFixed(1)))} h</b></span></p>
+    </div></article>`;
+}
+
+function vistaNivel(tipo) {
+  const n = SEGUIMIENTO[tipo];
+  const u = ultimo(tipo);
+  return `<article class="tarjeta" data-clave="${tipo}">${ico('mono', 'mono')}
+    <div class="med-cab"><span class="med-ico">${ico(n.icono)}</span>
+      <div><h3>${n.titulo}</h3><p class="frasco">${n.ayuda}</p></div></div>
+    <div class="opciones">${n.opciones.map(([v, t]) => `<button class="btn fantasma" data-accion="nivel" data-tipo="${tipo}" data-valor="${v}">${t}</button>`).join('')}</div>
+    <div class="datos"><p>${ico('reloj')}<span>${u ? `Último: <b>${etiquetaNivel(tipo, u.dia)}</b> a las <b>${hhmm(u.t)}</b> (${haceTexto(u.t)})` : 'Aún sin registros'}</span></p></div>
+  </article>`;
+}
+
+function historialSeguimiento() {
+  const tipos = ['sueno', ...Object.keys(SEGUIMIENTO)];
+  const lista = estado.registros.filter((r) => tipos.includes(r.tipo)).slice(-10).reverse();
+  if (!lista.length) return '';
+  const items = lista.map((r) => {
+    const txt = r.tipo === 'sueno' ? `Sueño · <b>${coma(r.temperatura)} h</b>` : `${SEGUIMIENTO[r.tipo].titulo} · <b>${etiquetaNivel(r.tipo, r.dia)}</b>`;
+    return `<li><span>${cuando(r.t)} · ${hhmm(r.t)} · ${txt}</span>
+      <button class="btn mini fantasma" data-accion="deshacer" data-id="${r.id}" aria-label="Borrar este registro">${ico('deshacer')}</button></li>`;
+  }).join('');
+  return `<article class="tarjeta"><h3 class="sub-titulo">Registros recientes</h3><ul class="hist">${items}</ul></article>`;
+}
+
+function vistaEvolucion() {
+  return seccion(0, titulo('Gráficas', 'grafica') + vistaGraficas())
+    + seccion(1, titulo('Seguimiento') + `<p class="nota ayuda">La temperatura se registra en la pestaña Fiebre. Las gráficas muestran los últimos 7 días; la línea punteada es la tendencia y sirve de apoyo, no es un diagnóstico.</p>`
+      + `<div class="lista">${vistaSueno()}${Object.keys(SEGUIMIENTO).map(vistaNivel).join('')}</div>`)
+    + seccion(2, historialSeguimiento());
+}
+
+const cuando = (t) => {
+  const d = fDia.format(t);
+  return d === hoyStr() ? 'Hoy' : d === fDia.format(ahora() - DIA_MS) ? 'Ayer' : `${d.slice(8, 10)}/${d.slice(5, 7)}`;
+};
 
 // Ultimos registros de un tipo, con boton para borrar uno si fue un error.
 function historial(tipo, conTemp, titulo = 'Registros recientes') {
   const lista = de(tipo).slice(-8).reverse();
   if (!lista.length) return '';
-  const hoy = hoyStr();
-  const ayer = fDia.format(ahora() - 864e5);
-  const cuando = (t) => {
-    const d = fDia.format(t);
-    return d === hoy ? 'Hoy' : d === ayer ? 'Ayer' : `${d.slice(8, 10)}/${d.slice(5, 7)}`;
-  };
   const items = lista.map((r) => `<li><span>${cuando(r.t)} · <b>${hhmm(r.t)}</b>${conTemp && r.temperatura ? ` · <b${r.temperatura >= 38.5 ? ' class="alta"' : ''}>${coma(r.temperatura)} °C</b>` : ''}</span>
     <button class="btn mini fantasma" data-accion="deshacer" data-id="${r.id}" aria-label="Borrar el registro de las ${hhmm(r.t)}">${ico('deshacer')}</button></li>`).join('');
   return `<article class="tarjeta"><h3 class="sub-titulo">${titulo}</h3><ul class="hist">${items}</ul></article>`;
@@ -578,8 +728,8 @@ function vistaPantalla() {
       return seccion(0, `<p class="nota ayuda">Toca una casilla para marcar la dosis. Toca una marcada para deshacerla.</p><article class="tarjeta">${vistaPlan()}</article>`);
     case 'receta':
       return seccion(0, vistaReceta());
-    case 'alarma':
-      return seccion(0, vistaSenales());
+    case 'evolucion':
+      return vistaEvolucion();
     default:
       return seccion(0, titulo('Hoy') + vistaListoHoy(diaActual()) + `<div class="lista">${ordenHoy(diaActual()).map((t) => tarjetaMed(t, diaActual())).join('')}</div>`)
         + seccion(1, vistaAvisos())
@@ -589,9 +739,8 @@ function vistaPantalla() {
 }
 
 function render() {
-  const memoria = document.getElementById('temp');
-  const temp = memoria ? memoria.value : '';
-  const enfocado = memoria && document.activeElement === memoria;
+  // Lo escrito en los campos (temperatura, sueño) sobrevive al redibujado.
+  const campos = [...document.querySelectorAll('input.campo')].map((i) => [i.id, i.value, i === document.activeElement]);
 
   let cuerpo;
   if (!estado.cargado) {
@@ -609,9 +758,12 @@ function render() {
 
   $app.innerHTML = `${vistaCabecera()}<main class="contenido">${cuerpo}</main>${estado.cargado ? vistaTabs() : ''}`;
 
-  const nuevo = document.getElementById('temp');
-  if (nuevo && temp) nuevo.value = temp;
-  if (nuevo && enfocado) nuevo.focus();
+  for (const [id, valor, enfocado] of campos) {
+    const nuevo = document.getElementById(id);
+    if (!nuevo) continue;
+    if (valor) nuevo.value = valor;
+    if (enfocado) nuevo.focus();
+  }
 
   estado.primera = false;
   if (estado.recien) {
@@ -711,6 +863,24 @@ const acciones = {
     campo.value = '';
     try {
       await registrar({ tipo: 'temperatura', temperatura }, 'temp');
+    } catch (e) {
+      campo.value = texto;
+      throw e;
+    }
+  },
+
+  async nivel({ tipo, valor }) {
+    await registrar({ tipo, valor: Number(valor) }, tipo);
+  },
+
+  async sueno() {
+    const campo = document.getElementById('sueno');
+    const texto = campo.value.trim().replace(',', '.');
+    const horas = Number(texto);
+    if (!texto || !Number.isFinite(horas) || horas < 0.5 || horas > 24) throw new Error('Escribe las horas dormidas, entre 0,5 y 24.');
+    campo.value = '';
+    try {
+      await registrar({ tipo: 'sueno', valor: horas }, 'sueno');
     } catch (e) {
       campo.value = texto;
       throw e;
