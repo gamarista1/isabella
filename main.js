@@ -22,20 +22,20 @@ const PLAN = {
   },
   azitromicina: {
     nombre: 'Azitromicina', corto: 'Azitromicina', icono: 'gota', dias: 5,
-    ml: '2', mg: '80 mg', frasco: '200 mg/5 mL', hora: '17:00', ajuste: 'hora_azitromicina',
+    ml: '2', mg: '80 mg', frasco: '200 mg/5 mL', hora: '21:00', ajuste: 'hora_azitromicina',
   },
   pediacort: {
     nombre: 'Pediacort (prednisolona)', corto: 'Pediacort', icono: 'pildora', dias: 5,
-    ml: '2,5', mg: '7,5 mg', frasco: '3 mg/mL', hora: '17:00', ajuste: 'hora_pediacort',
+    ml: '2,5', mg: '7,5 mg', frasco: '3 mg/mL', hora: '20:00', ajuste: 'hora_pediacort',
   },
 };
-const ORDEN = ['cetirizina', 'azitromicina', 'pediacort'];
+const ORDEN = ['cetirizina', 'pediacort', 'azitromicina'];   // por hora: 7, 8 y 9 PM
 
 // Funcion (no constante) porque usa h12(), que se define mas abajo.
 const recetaFilas = () => [
   ['Cetirizina', 'Genven 1 mg/mL', '2,5 mL (2,5 mg)', `1 vez al día, a las ${h12(PLAN.cetirizina.hora)}, 7 días`],
-  ['Azitromicina', '200 mg/5 mL', '2 mL (80 mg)', `1 vez al día, 5 días, hora sugerida ${h12(PLAN.azitromicina.hora)}`],
-  ['Pediacort (prednisolona)', '3 mg/mL', '2,5 mL (7,5 mg)', `1 vez al día, 5 días, hora sugerida ${h12(PLAN.pediacort.hora)}`],
+  ['Pediacort (prednisolona)', '3 mg/mL', '2,5 mL (7,5 mg)', `1 vez al día, a las ${h12(PLAN.pediacort.hora)}, 5 días`],
+  ['Azitromicina', '200 mg/5 mL', '2 mL (80 mg)', `1 vez al día, a las ${h12(PLAN.azitromicina.hora)}, 5 días`],
   ['Acetaminofén', '120 mg/5 mL', '5 mL (120 mg)', 'Solo si la temperatura es 38,5 °C o más, cada 4 a 6 horas'],
   ['Lavados nasales', 'Solución salina 0,9 %', '5 mL por fosa nasal', 'Cada 4 horas o con congestión'],
 ];
@@ -53,6 +53,7 @@ const SENALES = [
 const POR_CONFIRMAR = [
   'Duración de la azitromicina: la receta dice 5 días, pero el número estaba sobrescrito. Se usa 5 hasta confirmar.',
   'Concentración del Pediacort: las dosis suponen 3 mg/mL. El frasco debe decir 3 mg/mL.',
+  'Hora del Pediacort: se da a las 8:00 PM por orden de horario. Los corticoides suelen darse en la mañana, con comida; preguntar a la doctora si prefiere otra hora.',
   'Máximo diario de acetaminofén: la receta no lo indica.',
 ];
 

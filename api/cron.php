@@ -17,8 +17,8 @@ date_default_timezone_set('America/Caracas');
 const INICIO = '2026-11-10';                       // primer dia del tratamiento (dia 0)
 const PLAN = [                                     // tipo => [dias, hora por defecto, ajuste editable]
     'cetirizina'   => [7, '19:00', null],
-    'azitromicina' => [5, '17:00', 'hora_azitromicina'],
-    'pediacort'    => [5, '17:00', 'hora_pediacort'],
+    'pediacort'    => [5, '20:00', 'hora_pediacort'],
+    'azitromicina' => [5, '21:00', 'hora_azitromicina'],
 ];
 const MAX_AVISOS    = 3;
 const ENTRE_AVISOS  = 600;                         // 10 min
