@@ -187,14 +187,11 @@ h2, h3, .ml, .chip, .btn { font-family: 'Fredoka', 'Nunito', system-ui, sans-ser
 .hora b { font-size: 1.3rem; font-variant-numeric: tabular-nums; }
 .hora small { color: var(--suave); font-weight: 600; }
 
-.hora-sel { display: inline-flex; align-items: center; gap: 4px; font-size: 1.1rem; font-weight: 700; }
-.hora-sel select { padding: 0 8px; }
-select, .campo {
+.campo {
   min-height: 48px; padding: 0 12px; font: inherit; font-weight: 700; color: var(--texto);
   background: var(--tarjeta); border: 2px solid var(--borde); border-radius: 16px;
 }
-select { font-variant-numeric: tabular-nums; }
-select:focus-visible, .campo:focus-visible, .btn:focus-visible, .celda:focus-visible {
+.campo:focus-visible, .btn:focus-visible, .celda:focus-visible {
   outline: 3px solid var(--fucsia); outline-offset: 2px;
 }
 
@@ -225,14 +222,6 @@ select:focus-visible, .campo:focus-visible, .btn:focus-visible, .celda:focus-vis
 .btn.texto { width: auto; min-height: 48px; color: var(--suave); background: none; box-shadow: none; text-decoration: underline; font-family: 'Nunito', sans-serif; font-weight: 600; font-size: 0.95rem; }
 
 /* ---------- Alerta fija / avisos ---------- */
-.confirmar {
-  padding: 16px; border-radius: 22px; background: var(--lavanda);
-  border: 2px solid var(--lila);
-}
-.confirmar h2 { display: flex; align-items: center; gap: 8px; font-size: 1.1rem; font-weight: 600; margin-bottom: 8px; }
-.confirmar ol { margin: 0; padding-left: 22px; display: grid; gap: 6px; }
-.confirmar li { padding-left: 2px; }
-
 .avisos { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 22px; background: var(--tarjeta); box-shadow: var(--sombra); }
 .avisos .ico { color: var(--fucsia); }
 .avisos p { flex: 1; font-weight: 600; font-size: 0.95rem; }

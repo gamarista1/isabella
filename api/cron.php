@@ -15,10 +15,10 @@ if (php_sapi_name() !== 'cli') {
 date_default_timezone_set('America/Caracas');
 
 const INICIO = '2026-11-10';                       // primer dia del tratamiento (dia 0)
-const PLAN = [                                     // tipo => [dias, hora por defecto, ajuste editable]
-    'cetirizina'   => [7, '19:00', null],
-    'pediacort'    => [5, '20:00', 'hora_pediacort'],
-    'azitromicina' => [5, '21:00', 'hora_azitromicina'],
+const PLAN = [                                     // tipo => [dias, hora fija]
+    'cetirizina'   => [7, '19:00'],
+    'pediacort'    => [5, '20:00'],
+    'azitromicina' => [5, '21:00'],
 ];
 const MAX_AVISOS    = 3;
 const ENTRE_AVISOS  = 600;                         // 10 min
@@ -106,12 +106,6 @@ $ahora = time();
 $hoy   = date('Y-m-d');
 $dia   = (int) round((strtotime($hoy) - strtotime(INICIO)) / 86400);   // 0 = primer dia
 
-// Horas editables guardadas por la app.
-$ajustes = [];
-foreach ($db->query("SELECT clave, valor FROM ajustes WHERE clave NOT LIKE 'aviso:%'") as $a) {
-    $ajustes[$a['clave']] = $a['valor'];
-}
-
 // Avisos ya enviados: clave => marca de tiempo del ultimo.
 $avisos = [];
 foreach ($db->query("SELECT clave, valor FROM ajustes WHERE clave LIKE 'aviso:%'") as $a) {
@@ -124,11 +118,10 @@ function marcar(PDO $db, string $clave, int $ts): void {
 }
 
 // Medicamentos del plan.
-foreach (PLAN as $tipo => [$dias, $horaDefecto, $ajuste]) {
+foreach (PLAN as $tipo => [$dias, $hora]) {
     if ($dia < 0 || $dia >= $dias) {
         continue;
     }
-    $hora = $ajuste !== null ? ($ajustes[$ajuste] ?? $horaDefecto) : $horaDefecto;
     if ($ahora < strtotime("$hoy $hora")) {
         continue;                                  // todavia no es la hora
     }

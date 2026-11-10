@@ -1,10 +1,9 @@
 <?php
 // Isabella - API de medicacion. Un solo archivo, PDO, sin dependencias.
 //
-//   GET     api.php                    -> registros de los ultimos 10 dias + ajustes
+//   GET     api.php                    -> registros de los ultimos 10 dias
 //   POST    api.php                    -> crea registro  {tipo, dia?, temperatura?}
 //   DELETE  api.php?id=N               -> borra un registro
-//   POST    api.php?r=ajuste           -> {clave, valor}  (hora de azitromicina / pediacort)
 //   POST    api.php?r=suscripcion      -> guarda suscripcion push (PushSubscription.toJSON())
 //   DELETE  api.php?r=suscripcion      -> {endpoint}
 //
@@ -17,7 +16,6 @@ header('Cache-Control: no-store');
 // Dias de tratamiento por medicamento del plan (dia 0 = primer dia).
 const PLAN  = ['cetirizina' => 7, 'azitromicina' => 5, 'pediacort' => 5];
 const TIPOS = ['cetirizina', 'azitromicina', 'pediacort', 'acetaminofen', 'lavado_nasal'];
-const AJUSTES_EDITABLES = ['hora_azitromicina', 'hora_pediacort'];
 
 function salir(int $codigo, array $datos): void {
     http_response_code($codigo);
@@ -76,37 +74,15 @@ if ($metodo === 'GET') {
          WHERE dado_en >= NOW() - INTERVAL 10 DAY ORDER BY dado_en'
     )->fetchAll();
 
-    $ajustes = [];
-    foreach ($db->query("SELECT clave, valor FROM ajustes WHERE clave NOT LIKE 'aviso:%'") as $a) {
-        $ajustes[$a['clave']] = $a['valor'];
-    }
-
     salir(200, [
         'ahora'         => date('c'),
         'registros'     => array_map('formatear', $filas),
-        'ajustes'       => (object) $ajustes,
         'vapid_publica' => $cfg['vapid_publica'] ?? '',
     ]);
 }
 
 // ---------------------------------------------------------------- POST
 if ($metodo === 'POST') {
-    // Hora de azitromicina / pediacort (compartida entre telefonos).
-    if ($r === 'ajuste') {
-        $clave = $in['clave'] ?? '';
-        $valor = $in['valor'] ?? '';
-        if (!in_array($clave, AJUSTES_EDITABLES, true) || !preg_match('/^([01]\d|2[0-3]):[0-5]\d$/', (string) $valor)) {
-            salir(400, ['error' => 'Ajuste no valido']);
-        }
-        $q = $db->prepare('INSERT INTO ajustes (clave, valor) VALUES (?, ?) ON DUPLICATE KEY UPDATE valor = VALUES(valor)');
-        $q->execute([$clave, $valor]);
-        // Si cambia la hora, los avisos push ya enviados de ese medicamento dejan de valer.
-        $tipo = substr($clave, strlen('hora_'));
-        $q = $db->prepare('DELETE FROM ajustes WHERE clave LIKE ?');
-        $q->execute(['aviso:' . $tipo . ':%']);
-        salir(200, ['ok' => true]);
-    }
-
     // Suscripcion a notificaciones push.
     if ($r === 'suscripcion') {
         $endpoint = (string) ($in['endpoint'] ?? '');

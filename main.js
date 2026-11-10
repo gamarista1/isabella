@@ -18,15 +18,15 @@ const HORA = 3600e3;
 const PLAN = {
   cetirizina: {
     nombre: 'Cetirizina', corto: 'Cetirizina', icono: 'frasco', dias: 7,
-    ml: '2,5', mg: '2,5 mg', frasco: 'Genven 1 mg/mL', hora: '19:00', ajuste: null,
+    ml: '2,5', mg: '2,5 mg', frasco: 'Genven 1 mg/mL', hora: '19:00',
   },
   azitromicina: {
     nombre: 'Azitromicina', corto: 'Azitromicina', icono: 'gota', dias: 5,
-    ml: '2', mg: '80 mg', frasco: '200 mg/5 mL', hora: '21:00', ajuste: 'hora_azitromicina',
+    ml: '2', mg: '80 mg', frasco: '200 mg/5 mL', hora: '21:00',
   },
   pediacort: {
     nombre: 'Pediacort (prednisolona)', corto: 'Pediacort', icono: 'pildora', dias: 5,
-    ml: '2,5', mg: '7,5 mg', frasco: '3 mg/mL', hora: '20:00', ajuste: 'hora_pediacort',
+    ml: '2,5', mg: '7,5 mg', frasco: '3 mg/mL', hora: '20:00',
   },
 };
 const ORDEN = ['cetirizina', 'pediacort', 'azitromicina'];   // por hora: 7, 8 y 9 PM
@@ -48,13 +48,6 @@ const SENALES = [
   'No toma líquidos, vomita todo o pasan 8 horas sin pañal mojado.',
   'La fiebre sigue después de 48 a 72 horas de tratamiento, o sube a pesar del acetaminofén.',
   'Dosis doble o equivocada: llamar a la doctora o ir a emergencia con los frascos.',
-];
-
-const POR_CONFIRMAR = [
-  'Duración de la azitromicina: la receta dice 5 días, pero el número estaba sobrescrito. Se usa 5 hasta confirmar.',
-  'Concentración del Pediacort: las dosis suponen 3 mg/mL. El frasco debe decir 3 mg/mL.',
-  'Hora del Pediacort: se da a las 8:00 PM por orden de horario. Los corticoides suelen darse en la mañana, con comida; preguntar a la doctora si prefiere otra hora.',
-  'Máximo diario de acetaminofén: la receta no lo indica.',
 ];
 
 /* ---------- Iconos SVG ---------- */
@@ -107,7 +100,6 @@ const OLA = `<svg class="ola" viewBox="0 0 400 26" preserveAspectRatio="none" ar
 const $app = document.getElementById('app');
 const estado = {
   registros: [],
-  ajustes: {},
   vapid: '',
   skew: 0,               // diferencia entre el reloj del servidor y el del telefono
   cargado: false,
@@ -134,7 +126,6 @@ function a12(v24) {
   const [H, m] = v24.split(':').map(Number);
   return { h: H % 12 || 12, m, ap: H >= 12 ? 'PM' : 'AM' };
 }
-const a24 = (h, m, ap) => `${pad((Number(h) % 12) + (ap === 'PM' ? 12 : 0))}:${m}`;
 function h12(v24) {
   const { h, m, ap } = a12(v24);
   return `${h}:${pad(m)} ${ap}`;
@@ -160,11 +151,7 @@ const de = (tipo) => estado.registros.filter((r) => r.tipo === tipo);
 const registro = (tipo, dia) => estado.registros.find((r) => r.tipo === tipo && r.dia === dia);
 const ultimo = (tipo) => de(tipo).at(-1);
 
-function horaDe(tipo) {
-  const m = PLAN[tipo];
-  const v = m.ajuste && estado.ajustes[m.ajuste];
-  return /^\d\d:\d\d$/.test(v || '') ? v : m.hora;
-}
+const horaDe = (tipo) => PLAN[tipo].hora;
 const programadaMs = (tipo, fecha) => Date.parse(`${fecha}T${horaDe(tipo)}:00${OFFSET}`);
 
 /* ---------- Dialogo propio (en lugar de alert/confirm/prompt) ---------- */
@@ -241,8 +228,7 @@ async function cargar() {
     estado.skew = Date.parse(d.ahora) - Date.now();
     estado.vapid = d.vapid_publica || '';
     estado.registros = d.registros.map((r) => ({ ...r, t: Date.parse(r.dado_en) }));
-    estado.ajustes = d.ajustes || {};
-    estado.firmaDatos = JSON.stringify([d.registros, d.ajustes]);
+    estado.firmaDatos = JSON.stringify(d.registros);
     estado.cargado = true;
     estado.error = '';
   } catch (e) {
@@ -412,11 +398,6 @@ function vistaAlarma() {
   </div>`;
 }
 
-function vistaPorConfirmar() {
-  return `<div class="confirmar"><h2>${ico('alerta')}Confirmar con la doctora</h2>
-    <ol>${POR_CONFIRMAR.map((t) => `<li>${t}</li>`).join('')}</ol></div>`;
-}
-
 function vistaAvisos() {
   if (avisosActivos()) {
     return `<div class="avisos">${ico('campana')}<p>Alarma y avisos activos</p>
@@ -427,15 +408,6 @@ function vistaAvisos() {
     : 'Suena una alarma cuando toca la medicina, también con la app cerrada.';
   return `<div class="avisos grande">${ico('campana')}<p>${nota}</p>
     <button class="btn" data-accion="avisos">Activar alarma y avisos</button></div>`;
-}
-
-function selectorHora(ajuste, valor) {
-  const { h, m, ap } = a12(valor);
-  const optH = Array.from({ length: 12 }, (_, i) => `<option${i + 1 === h ? ' selected' : ''}>${i + 1}</option>`).join('');
-  const mins = [...new Set(Array.from({ length: 12 }, (_, i) => pad(i * 5)).concat(pad(m)))].sort();
-  const optM = mins.map((x) => `<option${x === pad(m) ? ' selected' : ''}>${x}</option>`).join('');
-  const optA = ['AM', 'PM'].map((x) => `<option${x === ap ? ' selected' : ''}>${x}</option>`).join('');
-  return `<span class="hora-sel" data-ajuste="${ajuste}"><select aria-label="Hora" data-parte="h">${optH}</select>:<select aria-label="Minutos" data-parte="m">${optM}</select><select aria-label="AM o PM" data-parte="ap">${optA}</select></span>`;
 }
 
 function corazones(tipo, d) {
@@ -453,9 +425,7 @@ function tarjetaMed(tipo, d) {
   const reg = activo ? registro(tipo, d) : null;
   const chip = activo ? `Día ${d + 1} de ${m.dias}` : d < 0 ? `Empieza el ${fechaDia(0)}` : 'Tratamiento terminado';
   const recien = estado.recien === `${tipo}:${d}` ? ' recien' : '';
-  const hora = m.ajuste
-    ? `${ico('reloj')}${selectorHora(m.ajuste, horaDe(tipo))}<small>hora editable</small>`
-    : `${ico('reloj')}<b>${h12(horaDe(tipo))}</b><small>hora programada</small>`;
+  const hora = `${ico('reloj')}<b>${h12(horaDe(tipo))}</b><small>hora programada</small>`;
 
   let accion = '';
   if (activo && reg) {
@@ -585,9 +555,8 @@ function vistaPantalla() {
     case 'alarma':
       return seccion(0, vistaSenales());
     default:
-      return seccion(0, vistaPorConfirmar())
+      return seccion(0, titulo('Hoy') + `<div class="lista">${ORDEN.map((t) => tarjetaMed(t, diaActual())).join('')}</div>`)
         + seccion(1, vistaAvisos())
-        + seccion(2, titulo('Hoy') + `<div class="lista">${ORDEN.map((t) => tarjetaMed(t, diaActual())).join('')}</div>`)
         + `<footer class="pie"><p>Esta app organiza lo que indicó la doctora y no reemplaza sus instrucciones.</p>
           <button class="btn texto" data-accion="clave">Cambiar clave</button></footer>`;
   }
@@ -735,18 +704,6 @@ $app.addEventListener('click', (e) => {
   audio();
   const fn = acciones[b.dataset.accion];
   if (fn) hacer(() => fn(b.dataset));
-});
-
-// Cambio de hora de azitromicina / pediacort.
-$app.addEventListener('change', (e) => {
-  const grupo = e.target.closest('[data-ajuste]');
-  if (!grupo) return;
-  const parte = (p) => grupo.querySelector(`[data-parte=${p}]`).value;
-  const valor = a24(parte('h'), parte('m'), parte('ap'));          // se guarda en 24 h
-  hacer(async () => {
-    await api('POST', '?r=ajuste', { clave: grupo.dataset.ajuste, valor });
-    await cargar();
-  });
 });
 
 // El navegador solo deja sonar audio despues de un toque del usuario.

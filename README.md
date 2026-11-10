@@ -26,7 +26,7 @@ Configuración del sitio: preset **Vite**, rama `main`, Node 22.x, directorio ra
 7. **hPanel > Cron Jobs**: tarea cada minuto con el comando
    `php /home/USUARIO/domains/TUDOMINIO/public_html/api/cron.php`
 8. En cada teléfono abre el sitio (HTTPS), escribe la clave, instala la app (Android: "Instalar app"; iPhone: Compartir > Agregar a pantalla de inicio) y toca **Activar alarma y avisos**.
-9. Prueba: marca una dosis y mira que aparezca en otro teléfono; usa Deshacer; escribe una clave mala y comprueba que la vuelve a pedir; pon la hora de azitromicina unos minutos adelante y espera el aviso.
+9. Prueba: marca una dosis y mira que aparezca en otro teléfono; usa Deshacer; escribe una clave mala y comprueba que la vuelve a pedir; comprueba que a las 7, 8 y 9 PM (cetirizina, Pediacort y azitromicina) llega el aviso si la dosis no está marcada. Las horas son fijas y están en `main.js` y `api/cron.php`.
 
 Alternativa manual (sin GitHub): `npm install`, `npm run build` y sube el contenido de `dist/` a `public_html`.
 
