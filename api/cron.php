@@ -25,7 +25,8 @@ const ENTRE_AVISOS  = 600;                         // 10 min
 const LAVADO_CADA   = 4 * 3600;
 const LAVADO_VIGENCIA = 6 * 3600;                  // no avisar de un lavado viejo
 
-$cfg = require __DIR__ . '/config.php';
+// Misma ubicacion que usa api.php.
+$cfg = require is_file(__DIR__ . '/config.php') ? __DIR__ . '/config.php' : dirname(__DIR__, 2) . '/isabella-config.php';
 
 $db = new PDO(
     "mysql:host={$cfg['bd_host']};dbname={$cfg['bd_nombre']};charset=utf8mb4",

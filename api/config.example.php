@@ -1,6 +1,10 @@
 <?php
-// Copia este archivo como config.php y completa tus datos.
-// config.php NO se sube a ningun repositorio (esta en .gitignore).
+// Copia este archivo y completa tus datos. NO se sube a ningun repositorio.
+//
+// Despliegue desde GitHub (recomendado): guardalo FUERA de public_html, con este nombre:
+//   /home/USUARIO/domains/TUDOMINIO/isabella-config.php
+// (la carpeta que contiene a public_html). Asi un redeploy no lo borra.
+// En desarrollo local puedes llamarlo api/config.php (esta en .gitignore).
 
 return [
     // MySQL de Hostinger (hPanel > Bases de datos)

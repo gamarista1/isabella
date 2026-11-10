@@ -31,7 +31,8 @@ set_exception_handler(function (Throwable $e) {
     salir(500, ['error' => 'Error del servidor']);
 });
 
-$cfg = require __DIR__ . '/config.php';
+// config.php junto a este archivo o, mejor, fuera de public_html (no se borra al redesplegar).
+$cfg = require is_file(__DIR__ . '/config.php') ? __DIR__ . '/config.php' : dirname(__DIR__, 2) . '/isabella-config.php';
 
 // Proteccion simple por clave compartida.
 if (!hash_equals((string) $cfg['clave'], (string) ($_SERVER['HTTP_X_CLAVE'] ?? ''))) {

@@ -10,19 +10,25 @@ api/api.php                         API JSON (PDO + MySQL)
 api/cron.php                        Avisos push (lo ejecuta el cron cada minuto)
 api/config.example.php              Plantilla de configuración
 schema.sql                          Tablas para phpMyAdmin
-scripts/vapid.mjs  scripts/iconos.mjs
+scripts/                            vapid.mjs, iconos.mjs, copiar-api.mjs
 ```
+`npm run build` genera `dist/` con el frontend **y** una copia de `api/` (sin `config.php`).
 
-## Despliegue en Hostinger
+## Despliegue en Hostinger desde GitHub
+Configuración del sitio: preset **Vite**, rama `main`, Node 22.x, directorio raíz `./`, comando `npm run build`, gestor `npm`, directorio de salida `dist`. Sin variables de entorno.
+
 1. **hPanel > Bases de datos MySQL**: crea la base de datos, el usuario y la contraseña.
-2. **phpMyAdmin**: abre la base, pestaña SQL, pega el contenido de `schema.sql` y ejecuta.
-3. Genera las claves de avisos: `node scripts/vapid.mjs`. Copia `api/config.example.php` a `api/config.php` y completa los datos de la base, la `clave` de la app y las dos líneas VAPID.
-4. `npm install` y `npm run build`.
-5. **Administrador de archivos**: sube el **contenido** de `dist/` a `public_html` y la carpeta `api/` (con su `config.php`) a `public_html/api`.
-6. **hPanel > Cron Jobs**: tarea cada minuto con el comando
+2. **phpMyAdmin**: abre la base, pestaña SQL, pega `schema.sql` y ejecuta.
+3. Genera las claves de avisos en tu PC: `node scripts/vapid.mjs`.
+4. Copia `api/config.example.php` a un archivo llamado **`isabella-config.php`** y completa los datos de la base, la `clave` de la app y las dos líneas VAPID.
+5. **Administrador de archivos**: sube `isabella-config.php` a la carpeta que **contiene** a `public_html` (por ejemplo `/home/USUARIO/domains/TUDOMINIO/`), nunca dentro de `public_html`. Así los redeploys no lo borran ni queda público.
+6. Despliega desde GitHub. El sitio y `api/` quedan en `public_html`.
+7. **hPanel > Cron Jobs**: tarea cada minuto con el comando
    `php /home/USUARIO/domains/TUDOMINIO/public_html/api/cron.php`
-7. En cada teléfono abre el sitio (con HTTPS), escribe la clave, instala la app (Android: "Instalar app"; iPhone: Compartir > Agregar a pantalla de inicio) y toca **Activar alarma y avisos**.
-8. Prueba: marca una dosis y mira que aparezca en otro teléfono; usa Deshacer; escribe una clave mala y comprueba que la vuelve a pedir; pon la hora de azitromicina unos minutos adelante y espera el aviso.
+8. En cada teléfono abre el sitio (HTTPS), escribe la clave, instala la app (Android: "Instalar app"; iPhone: Compartir > Agregar a pantalla de inicio) y toca **Activar alarma y avisos**.
+9. Prueba: marca una dosis y mira que aparezca en otro teléfono; usa Deshacer; escribe una clave mala y comprueba que la vuelve a pedir; pon la hora de azitromicina unos minutos adelante y espera el aviso.
+
+Alternativa manual (sin GitHub): `npm install`, `npm run build` y sube el contenido de `dist/` a `public_html`.
 
 ## Desarrollo local
 ```
@@ -37,6 +43,6 @@ Para regenerar los iconos: `node scripts/iconos.mjs`.
 - No se avisa de acetaminofén (solo se da con fiebre): únicamente se muestra el contador.
 
 ## Seguridad
-`api/config.php` está en `.gitignore`. `api/.htaccess` bloquea el acceso web a `config.php` y `cron.php`. Todas las consultas son preparadas y cada petición exige el header `X-Clave`.
+`config.php` e `isabella-config.php` nunca se suben al repositorio. `api/.htaccess` bloquea el acceso web a `config.php` y `cron.php`. Todas las consultas son preparadas y cada petición exige el header `X-Clave`.
 
 Esta app organiza lo que indicó la doctora y no reemplaza sus instrucciones.
