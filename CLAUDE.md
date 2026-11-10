@@ -9,5 +9,6 @@
 ## Proyecto
 - Prioridad: simplicidad. Sin frameworks, ORM, TypeScript, autenticación de usuarios ni tests.
 - Frontend: Vite + JavaScript puro (`index.html`, `main.js`, `style.css`). Backend: `api/api.php` y `api/cron.php` (PDO, sin Composer).
-- Interfaz en español, horas siempre en formato 24 h y zona America/Caracas (UTC-4).
+- Interfaz en español, horas siempre en formato 12 h con AM/PM (nunca hora militar) y zona America/Caracas (UTC-4). Internamente el servidor guarda 24 h.
+- La app se divide en pantallas con un menú fijo inferior: Hoy, Fiebre, Lavados, Plan, Receta y Alarma.
 - `api/config.php` nunca se sube al repositorio.

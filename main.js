@@ -31,10 +31,11 @@ const PLAN = {
 };
 const ORDEN = ['cetirizina', 'azitromicina', 'pediacort'];
 
-const RECETA = [
-  ['Cetirizina', 'Genven 1 mg/mL', '2,5 mL (2,5 mg)', '1 vez al día, a las 19:00, 7 días'],
-  ['Azitromicina', '200 mg/5 mL', '2 mL (80 mg)', '1 vez al día, 5 días, hora sugerida 17:00'],
-  ['Pediacort (prednisolona)', '3 mg/mL', '2,5 mL (7,5 mg)', '1 vez al día, 5 días, hora sugerida 17:00'],
+// Funcion (no constante) porque usa h12(), que se define mas abajo.
+const recetaFilas = () => [
+  ['Cetirizina', 'Genven 1 mg/mL', '2,5 mL (2,5 mg)', `1 vez al día, a las ${h12(PLAN.cetirizina.hora)}, 7 días`],
+  ['Azitromicina', '200 mg/5 mL', '2 mL (80 mg)', `1 vez al día, 5 días, hora sugerida ${h12(PLAN.azitromicina.hora)}`],
+  ['Pediacort (prednisolona)', '3 mg/mL', '2,5 mL (7,5 mg)', `1 vez al día, 5 días, hora sugerida ${h12(PLAN.pediacort.hora)}`],
   ['Acetaminofén', '120 mg/5 mL', '5 mL (120 mg)', 'Solo si la temperatura es 38,5 °C o más, cada 4 a 6 horas'],
   ['Lavados nasales', 'Solución salina 0,9 %', '5 mL por fosa nasal', 'Cada 4 horas o con congestión'],
 ];
@@ -66,6 +67,9 @@ const LINEA = {
   pildora: '<g transform="rotate(-40 12 12)"><rect x="3" y="8.5" width="18" height="7" rx="3.5"/><path d="M12 8.5v7"/></g>',
   lavado: '<path d="M12 3c2.4 3 4.5 5.3 4.5 8a4.5 4.5 0 0 1-9 0c0-2.7 2.1-5 4.5-8z"/><path d="M5 19.5c2 1.2 4.3 1.5 7 1.5s5-.3 7-1.5"/>',
   check: '<path class="trazo" d="M5 12.5l4.5 4.5L19 7.5"/>',
+  sol: '<circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M4.6 4.6l1.4 1.4M18 18l1.4 1.4M2.5 12h2M19.5 12h2M4.6 19.4L6 18M18 6l1.4-1.4"/>',
+  calendario: '<rect x="4" y="5" width="16" height="15" rx="3"/><path d="M4 10h16M9 3v4M15 3v4"/>',
+  receta: '<rect x="5" y="4" width="14" height="17" rx="3"/><path d="M9 4h6v3H9zM9 12h6M9 16h4"/>',
   deshacer: '<path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-4"/>',
   alerta: '<path d="M12 3.5l9.5 16.5h-19z"/><path d="M12 10v4.5M12 17.5v.01"/>',
   editar: '<path d="M4 20l1-4L16.5 4.5a2 2 0 0 1 3 3L8 19z"/>',
@@ -108,7 +112,8 @@ const estado = {
   cargado: false,
   error: '',
   mensaje: '',
-  primera: true,         // animacion de entrada solo la primera vez
+  pantalla: 'hoy',       // hoy | fiebre | lavados | plan | receta | alarma (menu inferior)
+  primera: true,         // animacion de entrada al abrir la app o cambiar de pantalla
   recien: null,          // clave del ultimo elemento marcado (para animarlo)
   silenciadas: {},       // clave -> hasta que momento (ms)
   firmaDatos: '',
@@ -118,12 +123,22 @@ let ocupado = false;
 
 const ahora = () => Date.now() + estado.skew;
 
-/* ---------- Fechas y horas (siempre 24 h, hora de Caracas) ---------- */
+/* ---------- Fechas y horas (formato AM/PM, hora de Venezuela) ---------- */
 const pad = (n) => String(n).padStart(2, '0');
 const f24 = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: TZ });
 const fDia = new Intl.DateTimeFormat('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit', timeZone: TZ });
 const fLarga = new Intl.DateTimeFormat('es-VE', { weekday: 'long', day: 'numeric', month: 'long', timeZone: TZ });
-const hhmm = (ms) => f24.format(ms);
+// "17:05" (24 h, formato interno) <-> {h: 5, m: 5, ap: 'PM'}. El servidor guarda siempre 24 h.
+function a12(v24) {
+  const [H, m] = v24.split(':').map(Number);
+  return { h: H % 12 || 12, m, ap: H >= 12 ? 'PM' : 'AM' };
+}
+const a24 = (h, m, ap) => `${pad((Number(h) % 12) + (ap === 'PM' ? 12 : 0))}:${m}`;
+function h12(v24) {
+  const { h, m, ap } = a12(v24);
+  return `${h}:${pad(m)} ${ap}`;
+}
+const hhmm = (ms) => h12(f24.format(ms));                          // "4:30 PM", hora de Caracas
 const hoyStr = () => fDia.format(ahora());                       // AAAA-MM-DD
 const diasEntre = (a, b) => Math.round((Date.parse(b + 'T00:00:00Z') - Date.parse(a + 'T00:00:00Z')) / 864e5);
 const diaActual = () => diasEntre(INICIO, hoyStr());             // 0 = primer dia
@@ -338,10 +353,37 @@ function seccion(i, html) {
 }
 const titulo = (texto, icono = 'flor') => `<h2 class="titulo">${ico(icono)}${texto}</h2>`;
 
+const PANTALLAS = [
+  ['hoy', 'Hoy', 'sol'],
+  ['fiebre', 'Fiebre', 'termometro'],
+  ['lavados', 'Lavados', 'lavado'],
+  ['plan', 'Plan', 'calendario'],
+  ['receta', 'Receta', 'receta'],
+  ['alarma', 'Alarma', 'alerta'],
+];
+const TITULOS = {
+  hoy: 'Isabella', fiebre: 'Fiebre y acetaminofén', lavados: 'Lavados nasales',
+  plan: 'Plan de los días', receta: 'Receta', alarma: 'Señales de alarma',
+};
+
 function vistaCabecera() {
-  return `<header class="cab">${ILUSTRACION}
-    <p class="cab-fecha">${fLarga.format(ahora())} · ${hhmm(ahora())}</p>
-    <h1>Isabella</h1><p class="cab-sub">11 meses · 8,6 kg</p>${OLA}</header>`;
+  const hoy = estado.pantalla === 'hoy';
+  const t = ahora();
+  return `<header class="cab${hoy ? '' : ' compacta'}">${ILUSTRACION}
+    <p class="cab-fecha">${fLarga.format(t)} · ${hhmm(t)}</p>
+    <h1>${TITULOS[estado.pantalla]}</h1>
+    <p class="cab-sub">${hoy ? '' : 'Isabella · '}11 meses · 8,6 kg · Hora de Venezuela</p>${OLA}</header>`;
+}
+
+// Menu fijo inferior. Un punto rojo avisa de dosis pendiente (Hoy) o tope de acetaminofen (Fiebre).
+function vistaTabs() {
+  const pendiente = pendientes().length > 0;
+  const tope = de('acetaminofen').filter((r) => r.t > ahora() - 24 * HORA).length >= TOPE_24H;
+  const items = PANTALLAS.map(([id, nombre, icono]) => {
+    const punto = (id === 'hoy' && pendiente) || (id === 'fiebre' && tope) ? '<i class="punto" aria-label="Pendiente"></i>' : '';
+    return `<a class="tab" href="#${id}"${id === estado.pantalla ? ' aria-current="page"' : ''}>${ico(icono)}<span>${nombre}</span>${punto}</a>`;
+  }).join('');
+  return `<nav class="tabs${estado.primera ? ' cambio' : ''}" aria-label="Secciones"><div class="tabs-in">${items}</div></nav>`;
 }
 
 function vistaAlarma() {
@@ -349,6 +391,13 @@ function vistaAlarma() {
   if (!lista.length) return '';
   const suena = lista.some((p) => !(estado.silenciadas[p.clave] > ahora()));
   const sinSonido = suena && (!ctx || ctx.state !== 'running');
+  // Fuera de "Hoy" el aviso es una franja corta que lleva a Hoy.
+  if (estado.pantalla !== 'hoy') {
+    return `<div class="alarma corta${suena ? ' suena' : ''}" role="alert">
+      <div class="alarma-cab">${ico('campana', 'campana')}<strong>Es hora: ${lista.map((p) => p.titulo.split(' (')[0]).join(', ')}</strong></div>
+      <div class="alarma-bot"><a class="btn mini claro" href="#hoy">Ir a Hoy</a>${suena ? `<button class="btn mini claro" data-accion="silenciar">${ico('silencio')}Silenciar</button>` : ''}</div>
+    </div>`;
+  }
   const filas = lista.map((p) => {
     const lav = p.tipo === 'lavado_nasal';
     return `<li><span>${p.titulo} · ${p.detalle}</span>
@@ -380,11 +429,12 @@ function vistaAvisos() {
 }
 
 function selectorHora(ajuste, valor) {
-  const [h, m] = valor.split(':');
-  const optH = Array.from({ length: 24 }, (_, i) => `<option${pad(i) === h ? ' selected' : ''}>${pad(i)}</option>`).join('');
-  const mins = [...new Set(Array.from({ length: 12 }, (_, i) => pad(i * 5)).concat(m))].sort();
-  const optM = mins.map((x) => `<option${x === m ? ' selected' : ''}>${x}</option>`).join('');
-  return `<span class="hora-sel" data-ajuste="${ajuste}"><select aria-label="Hora" data-parte="h">${optH}</select>:<select aria-label="Minutos" data-parte="m">${optM}</select></span>`;
+  const { h, m, ap } = a12(valor);
+  const optH = Array.from({ length: 12 }, (_, i) => `<option${i + 1 === h ? ' selected' : ''}>${i + 1}</option>`).join('');
+  const mins = [...new Set(Array.from({ length: 12 }, (_, i) => pad(i * 5)).concat(pad(m)))].sort();
+  const optM = mins.map((x) => `<option${x === pad(m) ? ' selected' : ''}>${x}</option>`).join('');
+  const optA = ['AM', 'PM'].map((x) => `<option${x === ap ? ' selected' : ''}>${x}</option>`).join('');
+  return `<span class="hora-sel" data-ajuste="${ajuste}"><select aria-label="Hora" data-parte="h">${optH}</select>:<select aria-label="Minutos" data-parte="m">${optM}</select><select aria-label="AM o PM" data-parte="ap">${optA}</select></span>`;
 }
 
 function corazones(tipo, d) {
@@ -404,7 +454,7 @@ function tarjetaMed(tipo, d) {
   const recien = estado.recien === `${tipo}:${d}` ? ' recien' : '';
   const hora = m.ajuste
     ? `${ico('reloj')}${selectorHora(m.ajuste, horaDe(tipo))}<small>hora editable</small>`
-    : `${ico('reloj')}<b>${horaDe(tipo)}</b><small>hora programada</small>`;
+    : `${ico('reloj')}<b>${h12(horaDe(tipo))}</b><small>hora programada</small>`;
 
   let accion = '';
   if (activo && reg) {
@@ -447,8 +497,8 @@ function vistaAcetaminofen() {
     <input id="temp" class="campo" type="text" inputmode="decimal" autocomplete="off" placeholder="Temperatura en °C (opcional)" aria-label="Temperatura en grados">
     <button class="btn" data-accion="aceta">${ico('termometro')}Registrar 5 mL</button>
     <div class="datos">
-      <p>${ico('reloj')}${u ? `Última dosis: <b>${hhmm(u.t)}</b> (${haceTexto(u.t)})${u.temperatura ? ` · ${coma(u.temperatura)} °C` : ''}` : 'Sin dosis registradas'}</p>
-      ${proxima ? `<p class="${puede ? 'lista-ya' : ''}">${ico('reloj')}Próxima dosis desde <b>${hhmm(proxima)}</b>${puede ? ' (ya puede, solo con fiebre)' : ''}</p>` : ''}
+      <p>${ico('reloj')}<span>${u ? `Última dosis: <b>${hhmm(u.t)}</b> (${haceTexto(u.t)})${u.temperatura ? ` · ${coma(u.temperatura)} °C` : ''}` : 'Sin dosis registradas'}</span></p>
+      ${proxima ? `<p class="${puede ? 'lista-ya' : ''}">${ico('reloj')}<span>Próxima dosis desde <b>${hhmm(proxima)}</b>${puede ? ' (ya puede, solo con fiebre)' : ''}</span></p>` : ''}
     </div>
     <div class="contador"><span class="gotas">${gotas}</span><span>${n24} de ${TOPE_24H} dosis en las últimas 24 h</span></div>
     ${n24 >= TOPE_24H ? `<div class="tope-alerta" role="alert">${ico('alerta')}<span>Tope de seguridad calculado (unos 70 mg/kg al día), no una indicación de la receta: no dar más sin hablar con la doctora.</span></div>` : ''}
@@ -466,8 +516,8 @@ function vistaLavados() {
     <p class="regla">5 mL por fosa nasal, cada 4 horas o con congestión.</p>
     <button class="btn" data-accion="lavado">${ico('lavado')}Registrar lavado</button>
     <div class="datos">
-      <p>${ico('reloj')}${u ? `Último lavado: <b>${hhmm(u.t)}</b> (${haceTexto(u.t)})` : 'Aún sin lavados registrados'}</p>
-      ${sig ? `<p class="${t >= sig ? 'lista-ya' : ''}">${ico('reloj')}Siguiente a las <b>${hhmm(sig)}</b></p>` : ''}
+      <p>${ico('reloj')}<span>${u ? `Último lavado: <b>${hhmm(u.t)}</b> (${haceTexto(u.t)})` : 'Aún sin lavados registrados'}</span></p>
+      ${sig ? `<p class="${t >= sig ? 'lista-ya' : ''}">${ico('reloj')}<span>Siguiente a las <b>${hhmm(sig)}</b></span></p>` : ''}
     </div></article>`;
 }
 
@@ -494,15 +544,52 @@ function vistaPlan() {
 }
 
 function vistaReceta() {
-  const filas = RECETA.map(([a, b, c, e]) => `<tr><td>${a}</td><td data-l="Frasco">${b}</td><td data-l="Dosis">${c}</td><td data-l="Cuándo">${e}</td></tr>`).join('');
+  const filas = recetaFilas().map(([a, b, c, e]) => `<tr><td>${a}</td><td data-l="Frasco">${b}</td><td data-l="Dosis">${c}</td><td data-l="Cuándo">${e}</td></tr>`).join('');
   return `<article class="tarjeta">
     <table class="receta"><thead><tr><th>Medicamento</th><th>Frasco</th><th>Dosis</th><th>Cuándo</th></tr></thead><tbody>${filas}</tbody></table>
     <p class="nota-receta">1 cc = 1 mL. Medir con jeringa oral, no con cucharita. Agitar los jarabes antes de medir.</p></article>`;
 }
 
 function vistaSenales() {
-  return `<article class="tarjeta senales">${titulo('Señales de alarma', 'alerta')}
+  return `<article class="tarjeta senales"><p class="senales-intro">${ico('alerta')}<span>Llama a la doctora o ve a emergencias de inmediato si ocurre algo de esto:</span></p>
     <ul>${SENALES.map((s) => `<li>${s}</li>`).join('')}</ul></article>`;
+}
+
+// Ultimos registros de un tipo, con boton para borrar uno si fue un error.
+function historial(tipo, conTemp) {
+  const lista = de(tipo).slice(-8).reverse();
+  if (!lista.length) return '';
+  const hoy = hoyStr();
+  const ayer = fDia.format(ahora() - 864e5);
+  const cuando = (t) => {
+    const d = fDia.format(t);
+    return d === hoy ? 'Hoy' : d === ayer ? 'Ayer' : `${d.slice(8, 10)}/${d.slice(5, 7)}`;
+  };
+  const items = lista.map((r) => `<li><span>${cuando(r.t)} · <b>${hhmm(r.t)}</b>${conTemp && r.temperatura ? ` · ${coma(r.temperatura)} °C` : ''}</span>
+    <button class="btn mini fantasma" data-accion="deshacer" data-id="${r.id}" aria-label="Borrar el registro de las ${hhmm(r.t)}">${ico('deshacer')}</button></li>`).join('');
+  return `<article class="tarjeta"><h3 class="sub-titulo">Registros recientes</h3><ul class="hist">${items}</ul></article>`;
+}
+
+// Contenido de la pantalla elegida en el menu inferior.
+function vistaPantalla() {
+  switch (estado.pantalla) {
+    case 'fiebre':
+      return seccion(0, vistaAcetaminofen()) + seccion(1, historial('acetaminofen', true));
+    case 'lavados':
+      return seccion(0, vistaLavados()) + seccion(1, historial('lavado_nasal', false));
+    case 'plan':
+      return seccion(0, `<p class="nota ayuda">Toca una casilla para marcar la dosis. Toca una marcada para deshacerla.</p><article class="tarjeta">${vistaPlan()}</article>`);
+    case 'receta':
+      return seccion(0, vistaReceta());
+    case 'alarma':
+      return seccion(0, vistaSenales());
+    default:
+      return seccion(0, vistaPorConfirmar())
+        + seccion(1, vistaAvisos())
+        + seccion(2, titulo('Hoy') + `<div class="lista">${ORDEN.map((t) => tarjetaMed(t, diaActual())).join('')}</div>`)
+        + `<footer class="pie"><p>Esta app organiza lo que indicó la doctora y no reemplaza sus instrucciones.</p>
+          <button class="btn texto" data-accion="clave">Cambiar clave</button></footer>`;
+  }
 }
 
 function render() {
@@ -520,20 +607,11 @@ function render() {
     cuerpo = [
       vistaAlarma(),
       aviso ? `<div class="mensaje" role="status">${aviso}</div>` : '',
-      seccion(0, vistaPorConfirmar()),
-      seccion(1, vistaAvisos()),
-      seccion(2, titulo('Hoy') + `<div class="lista">${ORDEN.map((t) => tarjetaMed(t, diaActual())).join('')}</div>`),
-      seccion(3, vistaAcetaminofen()),
-      seccion(4, vistaLavados()),
-      seccion(5, titulo('Plan de los días') + `<article class="tarjeta">${vistaPlan()}</article>`),
-      seccion(6, titulo('Receta') + vistaReceta()),
-      seccion(7, vistaSenales()),
-      `<footer class="pie"><p>Esta app organiza lo que indicó la doctora y no reemplaza sus instrucciones.</p>
-        <button class="btn texto" data-accion="clave">Cambiar clave</button></footer>`,
+      vistaPantalla(),
     ].join('');
   }
 
-  $app.innerHTML = `${vistaCabecera()}<main class="contenido">${cuerpo}</main>`;
+  $app.innerHTML = `${vistaCabecera()}<main class="contenido">${cuerpo}</main>${estado.cargado ? vistaTabs() : ''}`;
 
   const nuevo = document.getElementById('temp');
   if (nuevo && temp) nuevo.value = temp;
@@ -662,7 +740,8 @@ $app.addEventListener('click', (e) => {
 $app.addEventListener('change', (e) => {
   const grupo = e.target.closest('[data-ajuste]');
   if (!grupo) return;
-  const valor = `${grupo.querySelector('[data-parte=h]').value}:${grupo.querySelector('[data-parte=m]').value}`;
+  const parte = (p) => grupo.querySelector(`[data-parte=${p}]`).value;
+  const valor = a24(parte('h'), parte('m'), parte('ap'));          // se guarda en 24 h
   hacer(async () => {
     await api('POST', '?r=ajuste', { clave: grupo.dataset.ajuste, valor });
     await cargar();
@@ -674,6 +753,21 @@ document.addEventListener('pointerdown', () => { audio(); }, { passive: true });
 
 /* ---------- Inicio ---------- */
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+
+// La pantalla va en la direccion (#plan, #fiebre...): el boton Atras y los enlaces funcionan.
+const pantallaDeHash = () => {
+  const h = location.hash.slice(1);
+  return PANTALLAS.some((p) => p[0] === h) ? h : null;
+};
+estado.pantalla = pantallaDeHash() || 'hoy';
+window.addEventListener('hashchange', () => {
+  const p = pantallaDeHash() || 'hoy';
+  if (p === estado.pantalla) return;
+  estado.pantalla = p;
+  estado.primera = true;
+  render();
+  window.scrollTo(0, 0);
+});
 
 render();
 cargar().then(() => {

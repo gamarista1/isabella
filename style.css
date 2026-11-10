@@ -91,7 +91,46 @@ h2, h3, .ml, .chip, .btn { font-family: 'Fredoka', 'Nunito', system-ui, sans-ser
 .cab-sub { font-weight: 600; opacity: 0.85; }
 .ola { position: absolute; left: 0; right: 0; bottom: -1px; width: 100%; height: 26px; fill: var(--fondo); transition: fill 0.4s; }
 
-.contenido { max-width: 560px; margin: 0 auto; padding: 8px 16px calc(env(safe-area-inset-bottom) + 56px); display: grid; gap: 22px; }
+.contenido { max-width: 560px; margin: 0 auto; padding: 8px 16px calc(env(safe-area-inset-bottom) + 120px); display: grid; gap: 22px; }
+
+/* Encabezado compacto de las pantallas que no son "Hoy" */
+.cab.compacta { padding: calc(env(safe-area-inset-top) + 16px) 16px 46px; }
+.cab.compacta h1 { font-family: 'Fredoka', 'Nunito', sans-serif; font-weight: 600; font-size: 1.7rem; }
+.cab-sub { font-size: 0.88rem; }
+
+/* ---------- Menu inferior fijo ---------- */
+.tabs {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
+  padding: 6px 8px calc(env(safe-area-inset-bottom) + 6px);
+  background: color-mix(in srgb, var(--tarjeta) 93%, transparent);
+  -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+  border-top: 2px dotted var(--borde);
+  box-shadow: 0 -10px 24px -16px rgba(217, 74, 133, 0.5);
+}
+.tabs-in { max-width: 560px; margin: 0 auto; display: grid; grid-template-columns: repeat(6, 1fr); gap: 2px; }
+.tab {
+  position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  min-height: 56px; padding: 4px 0; border-radius: 18px; text-decoration: none;
+  color: var(--suave); font-size: 0.7rem; font-weight: 700;
+  transition: transform 0.25s var(--resorte), background-color 0.3s, color 0.3s;
+}
+.tab .ico { width: 24px; height: 24px; }
+.tab:active { transform: scale(0.9); }
+.tab[aria-current='page'] { color: var(--texto); background: var(--rosa-suave); }
+.tab[aria-current='page'] .ico { color: var(--fucsia); }
+.tabs.cambio .tab[aria-current='page'] .ico { animation: brinco 0.5s var(--resorte); }
+.punto { position: absolute; top: 5px; left: calc(50% + 8px); width: 11px; height: 11px; border-radius: 50%; background: var(--coral); border: 2px solid var(--tarjeta); }
+@keyframes brinco { 0% { transform: translateY(6px) scale(0.7); } 60% { transform: translateY(-4px) scale(1.2); } 100% { transform: none; } }
+
+/* ---------- Registros recientes ---------- */
+.sub-titulo { font-size: 1.1rem; font-weight: 600; margin-bottom: 4px; }
+.hist { list-style: none; margin: 0; padding: 0; }
+.hist li { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 52px; border-bottom: 2px dotted var(--borde); font-variant-numeric: tabular-nums; }
+.hist li:last-child { border: 0; }
+.hist .btn { width: 48px; padding: 0; flex: none; }
+.ayuda { margin: 0 4px 10px; }
+.senales-intro { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 10px; font-weight: 800; color: var(--coral); }
+.senales-intro .ico { margin-top: 2px; }
 
 /* ---------- Iconos ---------- */
 .ico { width: 1.5em; height: 1.5em; flex: none; fill: currentColor; }
@@ -148,7 +187,8 @@ h2, h3, .ml, .chip, .btn { font-family: 'Fredoka', 'Nunito', system-ui, sans-ser
 .hora b { font-size: 1.3rem; font-variant-numeric: tabular-nums; }
 .hora small { color: var(--suave); font-weight: 600; }
 
-.hora-sel { display: inline-flex; align-items: center; gap: 4px; font-size: 1.2rem; font-weight: 700; }
+.hora-sel { display: inline-flex; align-items: center; gap: 4px; font-size: 1.1rem; font-weight: 700; }
+.hora-sel select { padding: 0 8px; }
 select, .campo {
   min-height: 48px; padding: 0 12px; font: inherit; font-weight: 700; color: var(--texto);
   background: var(--tarjeta); border: 2px solid var(--borde); border-radius: 16px;
@@ -212,6 +252,12 @@ select:focus-visible, .campo:focus-visible, .btn:focus-visible, .celda:focus-vis
 .alarma ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
 .alarma li { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-weight: 700; }
 .alarma .nota { color: #fff; opacity: 0.9; }
+
+.alarma.corta { padding: 10px 14px; gap: 8px; border-radius: 22px; }
+.alarma.corta .alarma-cab { font-size: 1.05rem; }
+.alarma-bot { display: flex; gap: 8px; flex-wrap: wrap; }
+.alarma-bot .btn { flex: 1; }
+a.btn { text-decoration: none; }
 
 .mensaje { padding: 12px 16px; border-radius: 18px; background: var(--coral-fondo); color: var(--coral); font-weight: 700; }
 
